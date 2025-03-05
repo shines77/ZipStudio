@@ -10,7 +10,7 @@
 
 #include "zipstd/huffman/huffman.hpp"
 
-namespace ziplab {
+namespace zipstd {
 
 HuffmanNode *
 HuffmanCompressor::buildHuffmanTree(const FreqMap & freqMap)
@@ -315,4 +315,4 @@ void HuffmanCompressor::decompressFile(const std::string& inputFile, const std::
     outFile.close();
 }
 
-} // namespace ziplab
+} // namespace zipstd

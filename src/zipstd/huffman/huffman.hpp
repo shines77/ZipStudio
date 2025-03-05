@@ -1,5 +1,5 @@
-#ifndef ZIPLAB_HUFFMAN_HPP
-#define ZIPLAB_HUFFMAN_HPP
+#ifndef ZIPSTD_HUFFMAN_HPP
+#define ZIPSTD_HUFFMAN_HPP
 
 #include <cstdint>
 #include <cstddef>
@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <memory>
 
-namespace ziplab {
+namespace zipstd {
 
 using HuffmanByte = unsigned char;
 
@@ -65,6 +65,6 @@ private:
     HuffmanNode * deserializeTree(const std::vector<HuffmanByte>& tree_data, std::size_t& index);
 };
 
-} // namespace ziplab
+} // namespace zipstd
 
-#endif // ZIPLAB_HUFFMAN_HPP
+#endif // ZIPSTD_HUFFMAN_HPP
