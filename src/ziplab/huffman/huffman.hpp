@@ -15,13 +15,13 @@ using HuffmanByte = unsigned char;
 
 class HuffmanNode {
 public:
-    HuffmanByte data;
+    HuffmanByte   data;
     std::uint32_t freq;
 
     HuffmanNode * left;
     HuffmanNode * right;
 
-    HuffmanNode(HuffmanByte data, int freq) : data(data), freq(freq), left(nullptr), right(nullptr) {}
+    HuffmanNode(HuffmanByte data, std::uint32_t freq) : data(data), freq(freq), left(nullptr), right(nullptr) {}
 };
 
 struct HuffmanCompare
@@ -43,26 +43,26 @@ public:
     std::vector<HuffmanByte> decompress(const std::vector<HuffmanByte>& compressed_data);
 
     // Compress file
-    void compressFile(const std::string& inputFile, const std::string& outputFile);
+    void compressFile(const std::string & inputFile, const std::string & outputFile);
 
     // Decompress file
-    void decompressFile(const std::string& inputFile, const std::string& outputFile);
+    void decompressFile(const std::string & inputFile, const std::string & outputFile);
 
 private:
     // Build Huffman tree
-    HuffmanNode * buildHuffmanTree(const FreqMap& freqMap);
+    HuffmanNode * buildHuffmanTree(const FreqMap & freqMap);
 
     // Build Huffman tree
-    HuffmanNode * buildHuffmanTree(const std::vector<HuffmanByte>& data);
+    HuffmanNode * buildHuffmanTree(const std::vector<HuffmanByte> & data);
 
     // Generate encoding table
-    void generateHuffmanCodes(HuffmanNode * node, const std::string& code, CodeMap& codes);
+    void generateHuffmanCodes(HuffmanNode * node, const std::string & code, CodeMap & codes);
 
     // Serialize Huffman tree
     std::vector<HuffmanByte> serializeTree(HuffmanNode * root);
 
     // Deserialize Huffman tree
-    HuffmanNode * deserializeTree(const std::vector<HuffmanByte>& tree_data, std::size_t& index);
+    HuffmanNode * deserializeTree(const std::vector<HuffmanByte> & tree_data, std::size_t & index);
 };
 
 } // namespace ziplab

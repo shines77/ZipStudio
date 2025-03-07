@@ -1,4 +1,6 @@
 
+#include "zipstd/huffman/huffman.hpp"
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -8,7 +10,7 @@
 #include <bitset>
 #include <algorithm>
 
-#include "zipstd/huffman/huffman.hpp"
+#include <assert.h>
 
 namespace zipstd {
 
@@ -53,60 +55,73 @@ HuffmanCompressor::buildHuffmanTree(const std::vector<HuffmanByte> & data)
 }
 
 void HuffmanCompressor::generateHuffmanCodes(HuffmanNode * node,
-                                             const std::string& code,
+                                             const std::string & code,
                                              CodeMap & codes)
 {
-    if (!node) return;
-
-    if (!node->left && !node->right) {
+    assert(node != nullptr);
+    if (!isLeaf(node)) {
+        // Internal node
+        assert(node->left != nullptr);
+        generateHuffmanCodes(node->left,  code + "0", codes);
+        
+        assert(node->right != nullptr);
+        generateHuffmanCodes(node->right, code + "1", codes);
+    } else {
+        // Leaf node
         codes[node->data] = code;
-        return;
     }
-
-    generateHuffmanCodes(node->left,  code + "0", codes);
-    generateHuffmanCodes(node->right, code + "1", codes);
 }
 
 std::vector<HuffmanByte>
-HuffmanCompressor::serializeTree(HuffmanNode * root)
+HuffmanCompressor::serializeTree(HuffmanNode * node)
 {
     std::vector<HuffmanByte> result;
-
-    if (!root) return result;
+    assert(node != nullptr);
 
     // Use preorder traversal to serialize the tree
-    if (!root->left && !root->right) {
-        result.push_back(1);  // Leaf node marker
-        result.push_back(root->data);
-    } else {
+    if (!isLeaf(node)) {
         result.push_back(0);  // Internal node marker
-        auto left_ser  = serializeTree(root->left);
-        auto right_ser = serializeTree(root->right);
+        assert(node->left != nullptr);
+        auto left_ser  = serializeTree(node->left);
+        assert(node->right != nullptr);
+        auto right_ser = serializeTree(node->right);
         result.insert(result.end(), left_ser.begin(),  left_ser.end());
         result.insert(result.end(), right_ser.begin(), right_ser.end());
+    } else {
+        result.push_back(1);  // Leaf node marker
+        result.push_back(node->data);
     }
 
     return result;
 }
 
 HuffmanNode *
-HuffmanCompressor::deserializeTree(const std::vector<HuffmanByte> & tree_data, std::size_t& index) {
+HuffmanCompressor::deserializeTree(const std::vector<HuffmanByte> & tree_data, std::size_t & index) {
     if (index >= tree_data.size()) {
         return nullptr;
     }
 
-    if (tree_data[index] == 1) {  // Leaf node
+    if (tree_data[index] == 0) {  // Internal node
         index++;
-        if (index >= tree_data.size())
-            return nullptr;
+        assert(index < tree_data.size());
+
+        auto node = new HuffmanNode('\0', 0);
+
+        node->left  = deserializeTree(tree_data, index);
+        assert(node->left != nullptr);
+        assert(index < tree_data.size());
+
+        node->right = deserializeTree(tree_data, index);
+        assert(node->right != nullptr);
+        assert(index <= tree_data.size());
+
+        return node;
+    } else {  // Leaf node
+        index++;
+        assert(index < tree_data.size());
+
         auto node = new HuffmanNode(tree_data[index], 0);
         index++;
-        return node;
-    } else {  // Internal node
-        index++;
-        auto node = new HuffmanNode('\0', 0);
-        node->left  = deserializeTree(tree_data, index);
-        node->right = deserializeTree(tree_data, index);
         return node;
     }
 }
@@ -114,10 +129,12 @@ HuffmanCompressor::deserializeTree(const std::vector<HuffmanByte> & tree_data, s
 std::vector<HuffmanByte>
 HuffmanCompressor::compress(const std::vector<HuffmanByte> & data)
 {
-    if (data.empty()) return {};
+    std::vector<HuffmanByte> compressed;
+    if (data.empty()) return compressed;
 
     // Build Huffman tree
     auto root = buildHuffmanTree(data);
+    assert(root != nullptr);
 
     // Generate encoding table
     CodeMap codes;
@@ -127,7 +144,6 @@ HuffmanCompressor::compress(const std::vector<HuffmanByte> & data)
     auto tree_data = serializeTree(root);
 
     // Compress data
-    std::vector<HuffmanByte> compressed;
     std::string bits;
 
     // Add tree size
@@ -157,7 +173,9 @@ HuffmanCompressor::compress(const std::vector<HuffmanByte> & data)
 
     // Handle remaining bits
     if (!bits.empty()) {
-        while (bits.length() < 8) bits += '0';
+        while (bits.length() < 8) {
+            bits += '0';
+        }
         std::bitset<8> byte(bits);
         compressed.push_back(static_cast<HuffmanByte>(byte.to_ulong()));
     }
@@ -168,7 +186,9 @@ HuffmanCompressor::compress(const std::vector<HuffmanByte> & data)
 std::vector<HuffmanByte>
 HuffmanCompressor::decompress(const std::vector<HuffmanByte> & compressed_data)
 {
-    if (compressed_data.size() < 2 * sizeof(std::size_t)) return {};
+    if (compressed_data.size() < 2 * sizeof(std::size_t)) {
+        return {};
+    }
 
     std::size_t pos = 0;
 
@@ -200,8 +220,9 @@ HuffmanCompressor::decompress(const std::vector<HuffmanByte> & compressed_data)
         std::bitset<8> byte(compressed_data[pos++]);
         bits += byte.to_string();
 
-        while (!bits.empty() && decompressed.size() < data_size) {
-            if (!current) current = root;
+        while (!bits.empty() && (decompressed.size() < data_size)) {
+            if (current == nullptr)
+                current = root;
 
             if (bits[0] == '0') {
                 current = current->left;
@@ -209,7 +230,7 @@ HuffmanCompressor::decompress(const std::vector<HuffmanByte> & compressed_data)
                 current = current->right;
             }
 
-            if (current && !current->left && !current->right) {
+            if ((current != nullptr) && isLeaf(current)) {
                 decompressed.push_back(current->data);
                 current = root;
             }
@@ -221,7 +242,7 @@ HuffmanCompressor::decompress(const std::vector<HuffmanByte> & compressed_data)
     return decompressed;
 }
 
-void HuffmanCompressor::compressFile(const std::string& inputFile, const std::string& outputFile)
+void HuffmanCompressor::compressFile(const std::string & inputFile, const std::string & outputFile)
 {
     std::ifstream inFile(inputFile, std::ios::binary);
     std::ofstream outFile(outputFile, std::ios::binary);
@@ -242,7 +263,7 @@ void HuffmanCompressor::compressFile(const std::string& inputFile, const std::st
 
     // Serialize tree structure
     outFile << freqMap.size() << std::endl;
-    for (auto& pair : huffmanCodes) {
+    for (auto & pair : huffmanCodes) {
         outFile << pair.first << " " << pair.second << std::endl;
     }
 
@@ -268,21 +289,22 @@ void HuffmanCompressor::compressFile(const std::string& inputFile, const std::st
     }
 }
 
-void HuffmanCompressor::decompressFile(const std::string& inputFile, const std::string& outputFile)
+void HuffmanCompressor::decompressFile(const std::string & inputFile, const std::string & outputFile)
 {
     std::ifstream inFile(inputFile, std::ios::binary);
     std::ofstream outFile(outputFile, std::ios::binary);
 
     // Read the encode table
-    int size;
+    std::size_t size;
     inFile >> size;
 
     // ignore the NewLinw chars
     inFile.ignore();
+
     std::unordered_map<std::string, char> codeMap;
     char ch;
     std::string code;
-    for (int i = 0; i < size; ++i) {
+    for (std::size_t i = 0; i < size; ++i) {
         inFile.get(ch);
         std::getline(inFile, code);
         codeMap[code] = ch;

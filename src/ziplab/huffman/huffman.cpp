@@ -53,7 +53,7 @@ HuffmanCompressor::buildHuffmanTree(const std::vector<HuffmanByte> & data)
 }
 
 void HuffmanCompressor::generateHuffmanCodes(HuffmanNode * node,
-                                             const std::string& code,
+                                             const std::string & code,
                                              CodeMap & codes)
 {
     if (!node) return;
@@ -75,7 +75,7 @@ HuffmanCompressor::serializeTree(HuffmanNode * root)
     if (!root) return result;
 
     // Use preorder traversal to serialize the tree
-    if (!root->left && !root->right) {
+    if ((root->left == nullptr) && (root->right == nullptr)) {
         result.push_back(1);  // Leaf node marker
         result.push_back(root->data);
     } else {
@@ -90,7 +90,7 @@ HuffmanCompressor::serializeTree(HuffmanNode * root)
 }
 
 HuffmanNode *
-HuffmanCompressor::deserializeTree(const std::vector<HuffmanByte> & tree_data, std::size_t& index) {
+HuffmanCompressor::deserializeTree(const std::vector<HuffmanByte> & tree_data, std::size_t & index) {
     if (index >= tree_data.size()) {
         return nullptr;
     }
@@ -157,7 +157,9 @@ HuffmanCompressor::compress(const std::vector<HuffmanByte> & data)
 
     // Handle remaining bits
     if (!bits.empty()) {
-        while (bits.length() < 8) bits += '0';
+        while (bits.length() < 8) {
+            bits += '0';
+        }
         std::bitset<8> byte(bits);
         compressed.push_back(static_cast<HuffmanByte>(byte.to_ulong()));
     }
@@ -221,7 +223,7 @@ HuffmanCompressor::decompress(const std::vector<HuffmanByte> & compressed_data)
     return decompressed;
 }
 
-void HuffmanCompressor::compressFile(const std::string& inputFile, const std::string& outputFile)
+void HuffmanCompressor::compressFile(const std::string & inputFile, const std::string & outputFile)
 {
     std::ifstream inFile(inputFile, std::ios::binary);
     std::ofstream outFile(outputFile, std::ios::binary);
@@ -268,21 +270,22 @@ void HuffmanCompressor::compressFile(const std::string& inputFile, const std::st
     }
 }
 
-void HuffmanCompressor::decompressFile(const std::string& inputFile, const std::string& outputFile)
+void HuffmanCompressor::decompressFile(const std::string & inputFile, const std::string & outputFile)
 {
     std::ifstream inFile(inputFile, std::ios::binary);
     std::ofstream outFile(outputFile, std::ios::binary);
 
     // Read the encode table
-    int size;
+    std::size_t size;
     inFile >> size;
 
     // ignore the NewLinw chars
     inFile.ignore();
+
     std::unordered_map<std::string, char> codeMap;
     char ch;
     std::string code;
-    for (int i = 0; i < size; ++i) {
+    for (std::size_t i = 0; i < size; ++i) {
         inFile.get(ch);
         std::getline(inFile, code);
         codeMap[code] = ch;
