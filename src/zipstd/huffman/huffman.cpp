@@ -12,6 +12,8 @@
 
 #include <assert.h>
 
+#include <ziplab/basic/stddef.h>
+
 namespace zipstd {
 
 HuffmanNode *
@@ -59,7 +61,7 @@ void HuffmanCompressor::generateHuffmanCodes(HuffmanNode * node,
                                              CodeMap & codes)
 {
     assert(node != nullptr);
-    if (!isLeaf(node)) {
+    if (ziplab_likely(!isLeaf(node))) {
         // Internal node
         assert(node->left != nullptr);
         generateHuffmanCodes(node->left,  code + "0", codes);
@@ -79,7 +81,7 @@ HuffmanCompressor::serializeTree(HuffmanNode * node)
     assert(node != nullptr);
 
     // Use preorder traversal to serialize the tree
-    if (!isLeaf(node)) {
+    if (ziplab_likely(!isLeaf(node))) {
         result.push_back(0);  // Internal node marker
         assert(node->left != nullptr);
         auto left_ser  = serializeTree(node->left);
@@ -101,7 +103,7 @@ HuffmanCompressor::deserializeTree(const std::vector<HuffmanByte> & tree_data, s
         return nullptr;
     }
 
-    if (tree_data[index] == 0) {  // Internal node
+    if (ziplab_likely(tree_data[index] == 0)) {  // Internal node
         index++;
         assert(index < tree_data.size());
 
@@ -130,115 +132,111 @@ std::vector<HuffmanByte>
 HuffmanCompressor::compress(const std::vector<HuffmanByte> & data)
 {
     std::vector<HuffmanByte> compressed;
-    if (data.empty()) return compressed;
+    if (ziplab_likely(!data.empty())) {
+        // Build Huffman tree
+        auto root = buildHuffmanTree(data);
+        assert(root != nullptr);
 
-    // Build Huffman tree
-    auto root = buildHuffmanTree(data);
-    assert(root != nullptr);
+        // Generate encoding table
+        CodeMap codes;
+        generateHuffmanCodes(root, "", codes);
 
-    // Generate encoding table
-    CodeMap codes;
-    generateHuffmanCodes(root, "", codes);
+        // Serialize tree structure
+        auto tree_data = serializeTree(root);
 
-    // Serialize tree structure
-    auto tree_data = serializeTree(root);
+        // Compress data
+        std::string bits;
 
-    // Compress data
-    std::string bits;
+        // Add tree size
+        std::size_t tree_size = tree_data.size();
+        for (std::size_t i = 0; i < sizeof(std::size_t); ++i) {
+            compressed.push_back(static_cast<HuffmanByte>((tree_size >> (i * 8)) & 0xFF));
+        }
 
-    // Add tree size
-    std::size_t tree_size = tree_data.size();
-    for (std::size_t i = 0; i < sizeof(std::size_t); ++i) {
-        compressed.push_back(static_cast<HuffmanByte>((tree_size >> (i * 8)) & 0xFF));
-    }
+        // Add original data size
+        std::size_t data_size = data.size();
+        for (std::size_t i = 0; i < sizeof(std::size_t); ++i) {
+            compressed.push_back(static_cast<HuffmanByte>((data_size >> (i * 8)) & 0xFF));
+        }
 
-    // Add original data size
-    std::size_t data_size = data.size();
-    for (std::size_t i = 0; i < sizeof(std::size_t); ++i) {
-        compressed.push_back(static_cast<HuffmanByte>((data_size >> (i * 8)) & 0xFF));
-    }
+        // Add tree data
+        compressed.insert(compressed.end(), tree_data.begin(), tree_data.end());
 
-    // Add tree data
-    compressed.insert(compressed.end(), tree_data.begin(), tree_data.end());
+        // Compress data body
+        for (HuffmanByte c : data) {
+            bits += codes[c];
+            while (bits.length() >= 8) {
+                std::bitset<8> byte(bits.substr(0, 8));
+                compressed.push_back(static_cast<HuffmanByte>(byte.to_ulong()));
+                bits = bits.substr(8);
+            }
+        }
 
-    // Compress data body
-    for (HuffmanByte c : data) {
-        bits += codes[c];
-        while (bits.length() >= 8) {
-            std::bitset<8> byte(bits.substr(0, 8));
+        // Handle remaining bits
+        if (!bits.empty()) {
+            while (bits.length() < 8) {
+                bits += '0';
+            }
+            std::bitset<8> byte(bits);
             compressed.push_back(static_cast<HuffmanByte>(byte.to_ulong()));
-            bits = bits.substr(8);
         }
     }
-
-    // Handle remaining bits
-    if (!bits.empty()) {
-        while (bits.length() < 8) {
-            bits += '0';
-        }
-        std::bitset<8> byte(bits);
-        compressed.push_back(static_cast<HuffmanByte>(byte.to_ulong()));
-    }
-
     return compressed;
 }
 
 std::vector<HuffmanByte>
 HuffmanCompressor::decompress(const std::vector<HuffmanByte> & compressed_data)
 {
-    if (compressed_data.size() < 2 * sizeof(std::size_t)) {
-        return {};
-    }
-
-    std::size_t pos = 0;
-
-    // Read tree size
-    std::size_t tree_size = 0;
-    for (std::size_t i = 0; i < sizeof(std::size_t); ++i) {
-        tree_size |= static_cast<std::size_t>(compressed_data[pos++]) << (i * 8);
-    }
-
-    // Read original data size
-    std::size_t data_size = 0;
-    for (std::size_t i = 0; i < sizeof(std::size_t); ++i) {
-        data_size |= static_cast<std::size_t>(compressed_data[pos++]) << (i * 8);
-    }
-
-    // Read and rebuild tree
-    std::vector<HuffmanByte> tree_data(compressed_data.begin() + pos,
-                                       compressed_data.begin() + pos + tree_size);
-    size_t tree_index = 0;
-    auto root = deserializeTree(tree_data, tree_index);
-    pos += tree_size;
-
-    // Decompress data
     std::vector<HuffmanByte> decompressed;
-    auto current = root;
-    std::string bits;
+    if (ziplab_likely(compressed_data.size() >= sizeof(std::size_t) * 2)) {
+        std::size_t pos = 0;
 
-    while (decompressed.size() < data_size && pos < compressed_data.size()) {
-        std::bitset<8> byte(compressed_data[pos++]);
-        bits += byte.to_string();
+        // Read tree size
+        std::size_t tree_size = 0;
+        for (std::size_t i = 0; i < sizeof(std::size_t); ++i) {
+            tree_size |= static_cast<std::size_t>(compressed_data[pos++]) << (i * 8);
+        }
 
-        while (!bits.empty() && (decompressed.size() < data_size)) {
-            if (current == nullptr)
-                current = root;
+        // Read original data size
+        std::size_t data_size = 0;
+        for (std::size_t i = 0; i < sizeof(std::size_t); ++i) {
+            data_size |= static_cast<std::size_t>(compressed_data[pos++]) << (i * 8);
+        }
 
-            if (bits[0] == '0') {
-                current = current->left;
-            } else {
-                current = current->right;
+        // Read and rebuild tree
+        std::vector<HuffmanByte> tree_data(compressed_data.begin() + pos,
+                                           compressed_data.begin() + pos + tree_size);
+        size_t tree_index = 0;
+        auto root = deserializeTree(tree_data, tree_index);
+        pos += tree_size;
+
+        // Decompress data
+        auto current = root;
+        std::string bits;
+
+        while (decompressed.size() < data_size && pos < compressed_data.size()) {
+            std::bitset<8> byte(compressed_data[pos++]);
+            bits += byte.to_string();
+
+            while (!bits.empty() && (decompressed.size() < data_size)) {
+                if (current == nullptr)
+                    current = root;
+
+                if (bits[0] == '0') {
+                    current = current->left;
+                } else {
+                    current = current->right;
+                }
+
+                if ((current != nullptr) && isLeaf(current)) {
+                    decompressed.push_back(current->data);
+                    current = root;
+                }
+
+                bits = bits.substr(1);
             }
-
-            if ((current != nullptr) && isLeaf(current)) {
-                decompressed.push_back(current->data);
-                current = root;
-            }
-
-            bits = bits.substr(1);
         }
     }
-
     return decompressed;
 }
 

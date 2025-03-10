@@ -22,7 +22,23 @@
     <ClCompile Include="..\..\..\src\ziplab\huffman\huffman.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\ziplab\basic\compiler.h" />
+    <ClInclude Include="..\..\..\src\ziplab\basic\export.h" />
+    <ClInclude Include="..\..\..\src\ziplab\basic\macros.h" />
+    <ClInclude Include="..\..\..\src\ziplab\basic\platform.h" />
+    <ClInclude Include="..\..\..\src\ziplab\basic\stddef.h" />
+    <ClInclude Include="..\..\..\src\ziplab\basic\vld.h" />
+    <ClInclude Include="..\..\..\src\ziplab\basic\vld_def.h" />
+    <ClInclude Include="..\..\..\src\ziplab\config\config.h" />
+    <ClInclude Include="..\..\..\src\ziplab\config\config_cxx.h" />
+    <ClInclude Include="..\..\..\src\ziplab\config\config_hw.h" />
+    <ClInclude Include="..\..\..\src\ziplab\config\config_hw_detect.h" />
+    <ClInclude Include="..\..\..\src\ziplab\config\config_hw_use.h" />
+    <ClInclude Include="..\..\..\src\ziplab\config\config_ziplab.h" />
+    <ClInclude Include="..\..\..\src\ziplab\config\config_post.h" />
+    <ClInclude Include="..\..\..\src\ziplab\config\config_pre.h" />
     <ClInclude Include="..\..\..\src\ziplab\huffman\huffman.hpp" />
+    <ClInclude Include="..\..\..\src\ziplab\version.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{ED301BCA-343E-4AC8-A839-70F7E9CB762C}</ProjectGuid>

@@ -8,6 +8,12 @@
     <Filter Include="src\huffman">
       <UniqueIdentifier>{2df57d2a-d079-4cbe-816c-a36da94c702e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\basic">
+      <UniqueIdentifier>{b12c15f1-bb58-44ab-b334-85da2e380064}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\config">
+      <UniqueIdentifier>{3cd2bf3f-2c7b-47a4-963a-d8ee395e2294}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\ziplab\huffman\huffman.cpp">
@@ -17,6 +23,54 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\src\ziplab\huffman\huffman.hpp">
       <Filter>src\huffman</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\basic\stddef.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\basic\vld.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\basic\vld_def.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\config\config.h">
+      <Filter>src\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\config\config_cxx.h">
+      <Filter>src\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\config\config_hw.h">
+      <Filter>src\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\config\config_hw_detect.h">
+      <Filter>src\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\config\config_hw_use.h">
+      <Filter>src\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\config\config_post.h">
+      <Filter>src\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\config\config_pre.h">
+      <Filter>src\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\config\config_ziplab.h">
+      <Filter>src\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\basic\compiler.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\basic\export.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\basic\macros.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\basic\platform.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\version.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
