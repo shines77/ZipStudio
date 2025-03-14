@@ -243,7 +243,7 @@ HuffmanCompressor::decompress(const std::vector<HuffmanByte> & compressed_data)
 void HuffmanCompressor::compressFile(const std::string & inputFile, const std::string & outputFile)
 {
     std::ifstream inFile(inputFile, std::ios::binary);
-    std::ofstream outFile(outputFile, std::ios::binary);
+    std::ofstream outFile(outputFile, std::ios::binary | std::ios::trunc);
 
     // Calculate char frequencies
     FreqMap freqMap;
@@ -260,6 +260,8 @@ void HuffmanCompressor::compressFile(const std::string & inputFile, const std::s
     generateHuffmanCodes(root, "", huffmanCodes);
 
     // Serialize tree structure
+    auto tree_data = serializeTree(root);
+
     outFile << freqMap.size() << std::endl;
     for (auto & pair : huffmanCodes) {
         outFile << pair.first << " " << pair.second << std::endl;

@@ -1,6 +1,8 @@
 #ifndef ZIPLAB_HUFFMAN_HPP
 #define ZIPLAB_HUFFMAN_HPP
 
+#pragma once
+
 #include <cstdint>
 #include <cstddef>
 #include <vector>

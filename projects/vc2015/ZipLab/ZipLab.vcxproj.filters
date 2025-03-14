@@ -14,6 +14,9 @@
     <Filter Include="src\config">
       <UniqueIdentifier>{3cd2bf3f-2c7b-47a4-963a-d8ee395e2294}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\stream">
+      <UniqueIdentifier>{7a315474-7d2b-4578-88fd-7951ae3963e1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\ziplab\huffman\huffman.cpp">
@@ -71,6 +74,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\ziplab\version.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\InputFile.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\OutputFile.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\InputStream.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\OutputStream.h">
+      <Filter>src\stream</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
