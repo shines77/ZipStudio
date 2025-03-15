@@ -75,16 +75,16 @@
     <ClInclude Include="..\..\..\src\ziplab\version.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\ziplab\stream\InputFile.h">
-      <Filter>src\stream</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ziplab\stream\OutputFile.h">
-      <Filter>src\stream</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\ziplab\stream\InputStream.h">
       <Filter>src\stream</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ziplab\stream\OutputStream.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\FileReader.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\FileWriter.h">
       <Filter>src\stream</Filter>
     </ClInclude>
   </ItemGroup>

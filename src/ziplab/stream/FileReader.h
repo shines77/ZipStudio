@@ -1,5 +1,5 @@
-#ifndef ZIPLAB_STREAM_INPUTFILE_HPP
-#define ZIPLAB_STREAM_INPUTFILE_HPP
+#ifndef ZIPLAB_STREAM_FILEREADER_HPP
+#define ZIPLAB_STREAM_FILEREADER_HPP
 
 #pragma once
 
@@ -17,7 +17,7 @@
 
 namespace ziplab {
 
-class InputFile
+class FileReader
 {
 public:
     using char_type = char;
@@ -46,10 +46,10 @@ private:
     size_type filesize_;
 
 public:
-    InputFile() : ifs_(), buffer_size_(kReadBuffSize), filesize_(0) {
+    FileReader() : ifs_(), buffer_size_(kReadBuffSize), filesize_(0) {
     }
 
-    InputFile(const char * filename, open_mode_t mode = kDefaultReadMode) :
+    FileReader(const char * filename, open_mode_t mode = kDefaultReadMode) :
         ifs_(filename, mode),
         buffer_size_(kReadBuffSize),
         filename_(filename),
@@ -57,7 +57,7 @@ public:
         readFile();
     }
 
-    InputFile(const std::string & filename, open_mode_t mode = kDefaultReadMode) :
+    FileReader(const std::string & filename, open_mode_t mode = kDefaultReadMode) :
         ifs_(filename, mode),
         buffer_size_(kReadBuffSize),
         filename_(filename),
@@ -65,9 +65,9 @@ public:
         readFile();
     }
 
-    InputFile(const InputFile & rhs) = delete;
+    FileReader(const FileReader & rhs) = delete;
 
-    InputFile(InputFile && other) :
+    FileReader(FileReader && other) :
         ifs_(std::move(other.ifs_)),
         content_(std::move(other.content_)),
         buffer_size_(other.buffer_size_),
@@ -75,7 +75,7 @@ public:
         filesize_(other.filesize_) {
     }
 
-    ~InputFile() {
+    ~FileReader() {
         close();
     }
 
@@ -157,4 +157,4 @@ private:
 
 } // namespace ziplab
 
-#endif // ZIPLAB_STREAM_INPUTFILE_HPP
+#endif // ZIPLAB_STREAM_FILEREADER_HPP

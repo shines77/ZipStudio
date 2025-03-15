@@ -1,5 +1,5 @@
-#ifndef ZIPLAB_STREAM_OUTPUTFILE_HPP
-#define ZIPLAB_STREAM_OUTPUTFILE_HPP
+#ifndef ZIPLAB_STREAM_FILEWRITER_HPP
+#define ZIPLAB_STREAM_FILEWRITER_HPP
 
 #pragma once
 
@@ -17,7 +17,7 @@
 
 namespace ziplab {
 
-class OutputFile
+class FileWriter
 {
 public:
     using char_type = char;
@@ -34,7 +34,7 @@ public:
 
     static const size_type KB = 1024;
     static const size_type MB = 1024 * KB;
-    static const size_type kReadBuffSize = 64 * KB;
+    static const size_type kWriteBuffSize = 128 * KB;
 
     static const size_type kInvalidSize = static_cast<size_type>(-1);
 
@@ -46,26 +46,26 @@ private:
     size_type filesize_;
 
 public:
-    OutputFile() : ofs_(), buffer_size_(kReadBuffSize), filesize_(0) {
+    FileWriter() : ofs_(), buffer_size_(kWriteBuffSize), filesize_(0) {
     }
 
-    OutputFile(const char * filename, open_mode_t mode = kDefaultWriteMode) :
+    FileWriter(const char * filename, open_mode_t mode = kDefaultWriteMode) :
         ofs_(filename, mode),
-        buffer_size_(kReadBuffSize),
+        buffer_size_(kWriteBuffSize),
         filename_(filename),
         filesize_(0) {
     }
 
-    OutputFile(const std::string & filename, open_mode_t mode = kDefaultWriteMode) :
+    FileWriter(const std::string & filename, open_mode_t mode = kDefaultWriteMode) :
         ofs_(filename, mode),
-        buffer_size_(kReadBuffSize),
+        buffer_size_(kWriteBuffSize),
         filename_(filename),
         filesize_(0) {
     }
 
-    OutputFile(const OutputFile & rhs) = delete;
+    FileWriter(const FileWriter & rhs) = delete;
 
-    OutputFile(OutputFile && other) :
+    FileWriter(FileWriter && other) :
         ofs_(std::move(other.ofs_)),
         content_(std::move(other.content_)),
         buffer_size_(other.buffer_size_),
@@ -73,7 +73,7 @@ public:
         filesize_(other.filesize_) {
     }
 
-    ~OutputFile() {
+    ~FileWriter() {
         close();
     }
 
@@ -118,37 +118,29 @@ public:
         }
     }
 
-    size_type writeFile(std::string & content, size_type readBuffSize = 0) {
-        size_type totolReadBytes = 0;
+    size_type writeFile(std::string & content, size_type writeBuffSize = 0) {
+        size_type totolWriteBytes = 0;
 
         if (ofs_.good()) {
-            ofs_.seekg(0, std::ios::end);
-            size_type totalFileSize = (size_type)ofs_.tellg();
-            filesize_ = totalFileSize;
+            ofs_.seekp(0, std::ios::end);
 
-            content.clear();
-            content.reserve(totalFileSize);
-            
-            ofs_.seekg(0, std::ios::beg);
+            writeBuffSize = (writeBuffSize != 0) ? writeBuffSize : kWriteBuffSize;
+            const char * writeBuf = content.c_str();
+            size_type totalSize = content.size();
+            size_type remainBytes = totalSize;
 
-            readBuffSize = (readBuffSize != 0) ? readBuffSize : kReadBuffSize;
-            std::unique_ptr<char> readBuf(new char[readBuffSize]);
-
-            while (!ofs_.eof()) {
-                ofs_.read(readBuf.get(), readBuffSize);
-                std::streamsize readBytes = ofs_.gcount();
-                if (readBytes > 0) {
-                    content.append(readBuf.get(), readBytes);
-                    totolReadBytes += readBytes;
-                } else {
-                    break;
-                }
+            while (remainBytes > 0 && ofs_.good()) {
+                size_type writeBytes = (remainBytes > writeBuffSize) ? writeBuffSize : remainBytes;
+                ofs_.write(writeBuf, writeBytes);
+                writeBuf += writeBytes;
+                totolWriteBytes += writeBytes;
+                remainBytes -= writeBytes;
             }
 
-            assert(totolReadBytes == totalFileSize);
+            assert(totolWriteBytes == totalSize);
         }
 
-        return totolReadBytes;
+        return totolWriteBytes;
     }
 
     size_type writeFile() {
@@ -161,4 +153,4 @@ private:
 
 } // namespace ziplab
 
-#endif // ZIPLAB_STREAM_OUTPUTFILE_HPP
+#endif // ZIPLAB_STREAM_FILEWRITER_HPP
