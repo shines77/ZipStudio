@@ -81,13 +81,13 @@ void ziplab_InputStream_test()
 
     {
         bool b = inputStream.readBool();
-        std::int8_t sbyte = inputStream.readByte();
-        std::uint8_t byte = inputStream.readSByte();
+        std::int8_t sbyte = inputStream.readSByte();
+        std::uint8_t byte = inputStream.readByte();
         std::int32_t i32 = inputStream.readInt32();
         std::uint32_t u32 = inputStream.readUInt32();
         void * vptr = inputStream.readVoidPtr();
 
-        printf("InputStream.readValue();\n\n");
+        printf("InputStream.unsafeReadValue():\n\n");
 
 #if defined(_MSC_VER)
         printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = 0x%p\n\n",
@@ -100,13 +100,51 @@ void ziplab_InputStream_test()
 
     {
         bool b = inputStream.peekBool();
-        std::int8_t sbyte = inputStream.peekByte();
-        std::uint8_t byte = inputStream.peekSByte();
+        std::int8_t sbyte = inputStream.peekSByte();
+        std::uint8_t byte = inputStream.peekByte();
         std::int32_t i32 = inputStream.peekInt32();
         std::uint32_t u32 = inputStream.peekUInt32();
         void * vptr = inputStream.peekVoidPtr();
 
-        printf("InputStream.peekValue();\n\n");
+        printf("InputStream.unsafePeekValue():\n\n");
+
+#if defined(_MSC_VER)
+        printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = 0x%p\n\n",
+            (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
+#else
+        printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = %p\n\n",
+            (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
+#endif
+    }
+
+    {
+        inputStream.skipBool();
+        inputStream.skipSByte();
+        inputStream.skipByte();
+        inputStream.skipInt32();
+        inputStream.skipUInt32();
+        inputStream.skipVoidPtr();
+
+        printf("InputStream.unsafeSkipValue():\n\n");
+    }
+
+    {
+        bool success;
+
+        bool b;
+        success = inputStream.readBool(b);
+        std::int8_t sbyte;
+        success &= inputStream.readSByte(sbyte);
+        std::uint8_t byte;
+        success &= inputStream.readByte(byte);
+        std::int32_t i32;
+        success &= inputStream.readInt32(i32);
+        std::uint32_t u32;
+        success &= inputStream.readUInt32(u32);
+        void * vptr;
+        success &= inputStream.readVoidPtr(vptr);
+
+        printf("InputStream.safeReadValue():\n\n");
 
 #if defined(_MSC_VER)
         printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = 0x%p\n\n",

@@ -139,6 +139,223 @@ public:
         return ((pos() + sizeof(type)) <= buffer_.size());
     }
 
+    // Safety skip value
+    template <typename T>
+    bool skipValue(T & val) {
+        static constexpr size_type step = sizeof(T);
+        if ((pos_ + step) <= buffer_.size()) {
+            ZIPLAB_UNUSED(val);
+            pos_ += step;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool skipBool(bool & b) {
+        std::uint8_t byte = static_cast<std::uint8_t>(b);
+        bool success = skipValue(byte);
+        b = (byte != 0);
+        return success;
+    }
+
+    bool skipChar(char & ch) {
+        return skipValue(ch);
+    }
+
+    bool skipUChar(unsigned char & ch) {
+        return skipValue(ch);
+    }
+
+    bool skipWChar(wchar_t & wch) {
+        return skipValue(wch);
+    }
+
+    bool skipSByte(std::int8_t & sbyte) {
+        return skipValue(sbyte);
+    }
+
+    bool skipByte(std::uint8_t & byte) {
+        return skipValue(byte);
+    }
+
+    bool skipInt8(std::int8_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipUInt8(std::uint8_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipInt16(std::int16_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipUInt16(std::uint16_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipInt32(std::int32_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipUInt32(std::uint32_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipInt64(std::int64_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipUInt64(std::uint64_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipSizeT(std::size_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipFloat(float & val) {
+        return skipValue(val);
+    }
+
+    bool skipDouble(double & val) {
+        return skipValue(val);
+    }
+
+    bool skipVoidPtr(void * & pt) {
+        return skipValue(pt);
+    }
+
+    template <typename T>
+    bool skipPtr(T * & pt) {
+        return skipValue(pt);
+    }
+
+    // Unsafe skip value
+    template <typename T>
+    void usSkipValue(T & val) {
+        static constexpr size_type step = sizeof(val);
+        assert((pos_ + step) <= buffer_.size());
+        ZIPLAB_UNUSED(val);
+        pos_ += step;
+    }
+
+    void skipBool() {
+        std::uint8_t byte;
+        usSkipValue(byte);
+        ZIPLAB_UNUSED(byte);
+    }
+
+    void skipChar() {
+        char ch;
+        usSkipValue(ch);
+        ZIPLAB_UNUSED(ch);
+    }
+
+    void skipUChar() {
+        unsigned char ch;
+        usSkipValue(ch);
+        ZIPLAB_UNUSED(ch);
+    }
+
+    void skipWChar() {
+        wchar_t ch;
+        usSkipValue(ch);
+        ZIPLAB_UNUSED(ch);
+    }
+
+    void skipSByte() {
+        std::int8_t sbyte;
+        usSkipValue(sbyte);
+        ZIPLAB_UNUSED(sbyte);
+    }
+
+    void skipByte() {
+        std::uint8_t byte;
+        usSkipValue(byte);
+        ZIPLAB_UNUSED(byte);
+    }
+
+    void skipInt8() {
+        std::int8_t val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipUInt8() {
+        std::uint8_t val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipInt16() {
+        std::int16_t val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipUInt16() {
+        std::uint16_t val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipInt32() {
+        std::int32_t val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipUInt32() {
+        std::uint32_t val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipInt64() {
+        std::int64_t val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipUInt64() {
+        std::uint64_t val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipSizeT() {
+        std::size_t val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipFloat() {
+        float val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipDouble() {
+        double val;
+        usSkipValue(val);
+        ZIPLAB_UNUSED(val);
+    }
+
+    void skipVoidPtr() {
+        void * pt;
+        usSkipValue(pt);
+        pt = nullptr;
+    }
+
+    template <typename T>
+    void skipPtr() {
+        T * pt;
+        usSkipValue(pt);
+        pt = nullptr;
+    }
+
     // Safety peek value
     template <typename T>
     bool peekValue(T & val) {
