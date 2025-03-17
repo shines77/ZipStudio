@@ -42,7 +42,7 @@ private:
 public:
     BasicMemoryBuffer() : data_(nullptr), size_(0) {
     }
-    BasicMemoryBuffer(size_type capacity) : BasicMemoryBuffer() {
+    BasicMemoryBuffer(size_type capacity) : data_(nullptr), size_(0) {
         if (capacity > 0) {
             reserve_impl<true, false>(capacity);
         }
@@ -52,7 +52,7 @@ public:
         assgin_and_copy_data<true>(src.data(), src.size());
     }
     BasicMemoryBuffer(BasicMemoryBuffer && src) : BasicMemoryBuffer() {
-        swap(src);
+        swap_data(src);
     }
 
     BasicMemoryBuffer(const char_type * data, size_type size) : BasicMemoryBuffer() {
@@ -94,6 +94,12 @@ public:
     const char_type * data() const { return data_; }
 
     size_type size() const { return size_; }
+
+    char_type * begin() { return data(); }
+    const char_type * begin() const { return data(); }
+
+    char_type * end() { return (data() + size()); }
+    const char_type * end() const { return (data() + size()); }
 
     void destroy() {
         if (data_ != nullptr) {

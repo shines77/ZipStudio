@@ -40,44 +40,54 @@ public:
 private:
     memory_buffer_t buffer_;
     size_type pos_;
+    size_type size_;
 
 public:
-    BasicInputStream() : buffer_(), pos_(0) {
+    BasicInputStream() : buffer_(), pos_(0), size_(0) {
     }
-    BasicInputStream(size_type capacity) : buffer_(capacity), pos_(0) {
-    }
-
-    BasicInputStream(const memory_buffer_t & src) : buffer_(src), pos_(0) {
-    }
-    BasicInputStream(memory_buffer_t && src)
-        : buffer_(std::forward<memory_buffer_t>(src)), pos_(0) {
+    BasicInputStream(size_type capacity) : buffer_(capacity), pos_(0), size_(0) {
     }
 
-    BasicInputStream(const char_type * data, size_type size) : buffer_(data, size), pos_(0) {
+    BasicInputStream(const memory_buffer_t & buffer)
+        : buffer_(buffer), pos_(0), size_(buffer.size()) {
+    }
+    BasicInputStream(memory_buffer_t && buffer)
+        : buffer_(std::forward<memory_buffer_t>(buffer)), pos_(0), size_(buffer.size()) {
     }
 
-    template <size_type N>
-    BasicInputStream(const char_type (&data)[N]) : buffer_(data, N), pos_(0) {
+    BasicInputStream(const char_type * data, size_type size)
+        : buffer_(data, size), pos_(0), size_(size) {
     }
 
     template <size_type N>
-    BasicInputStream(const std::array<string_type, N> & strings) : buffer_(strings), pos_(0) {
+    BasicInputStream(const char_type (&data)[N])
+        : buffer_(data, N), pos_(0), size_(N) {
     }
 
-    BasicInputStream(const string_type & src) : buffer_(src), pos_(0) {
+    template <size_type N>
+    BasicInputStream(const std::array<string_type, N> & strings)
+        : buffer_(strings), pos_(0), size_(N) {
     }
 
-    BasicInputStream(const vector_type & src) : buffer_(src), pos_(0) {
+    BasicInputStream(const string_type & src)
+        : buffer_(src), pos_(0), size_(src.size()) {
+    }
+
+    BasicInputStream(const vector_type & src)
+        : buffer_(src), pos_(0), size_(src.size()) {
     }
 
     template <typename Container>
-    BasicInputStream(const Container & src) : buffer_(src), pos_(0) {
+    BasicInputStream(const Container & src)
+        : buffer_(src), pos_(0), size_(src.size()) {
     }
 
-    BasicInputStream(const BasicInputStream & src) : buffer_(src.buffer()), pos_(0) {
+    BasicInputStream(const BasicInputStream & src)
+        : buffer_(src.buffer()), pos_(src.pos()), size_(src.size()) {
     }
     BasicInputStream(BasicInputStream && src)
-        : buffer_(std::forward<memory_buffer_t>(src.buffer())), pos_(0) {
+        : buffer_(std::forward<memory_buffer_t>(src.buffer())),
+          pos_(src.pos()), size_(src.size()) {
     }
 
     ~BasicInputStream() {
@@ -90,38 +100,73 @@ public:
     char_type * data() { return buffer_.data(); }
     const char_type * data() const { return buffer_.data(); }
 
-    size_type size() const { return buffer_.size(); }
     size_type pos() const { return pos_; }
+    size_type size() const { return size_; }
+    size_type capacity() const { return buffer_.size(); }
 
     memory_buffer_t & buffer() { return buffer_; }
     const memory_buffer_t & buffer() const { return buffer_; }
 
+    // Position
+    char_type * begin() { return buffer_.data(); }
+    const char_type * begin() const { return buffer_.data(); }
+
+    char_type * end() { return (buffer_.data() + size()); }
+    const char_type * end() const { return (buffer_.data() + size()); }
+
+    char_type * tail() { return (buffer_.data() + buffer_.size()); }
+    const char_type * tail() const { return (buffer_.data() + buffer_.size()); }
+
+    char_type * current() { return (buffer_.data() + pos()); }
+    const char_type * current() const { return (buffer_.data() + pos()); }
+
     void destroy() {
         buffer_.destroy();
+        pos_ = 0;
+        size_ = 0;
+    }
+
+    void reset() {
+        pos_ = 0;
+        size_ = 0;
     }
 
     void reserve(size_type new_capacity) {
         buffer_.reserve(new_capacity);
+        assert(pos() <= buffer_.size());
+        assert(size() <= buffer_.size());
     }
 
     void resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
         buffer_.resize(new_size, fill_new, init_val);
+        reset();
     }
 
     void reserve_and_keep(size_type new_capacity) {
         buffer_.reserve_and_keep(new_capacity);
+        assert(pos() <= buffer_.size());
+        assert(size() <= buffer_.size());
     }
 
     void resize_and_keep(size_type new_size, bool fill_new = true, char_type init_val = 0) {
         buffer_.resize_and_keep(new_size, fill_new, init_val);
+        if (pos() > buffer_.size()) {
+            pos_ = buffer_.size()
+        }
+        if (size() > buffer_.size()) {
+            size_ = buffer_.size()
+        }
     }
 
     void clear() {
         buffer_.clear();
+        reset();
     }
 
     void copy(const BasicInputStream & src) {
         buffer_.copy(src);
+        pos_ = src.pos();
+        size_ = src.size();
     }
 
     void swap(BasicInputStream & other) {
@@ -130,14 +175,18 @@ public:
         }
     }
 
+    friend inline void swap(BasicInputStream & lhs, BasicInputStream & rhs) {
+        lhs.swap(rhs);
+    }
+
     bool is_overflow() const {
         return (pos() < buffer_.size());
     }
 
     template <typename T>
-    bool is_overflow(const T & type) const {
+    bool is_overflow(const T & val) const {
         ZIPLAB_UNUSED(type);
-        return ((pos() + sizeof(type)) <= buffer_.size());
+        return ((pos() + sizeof(val)) <= buffer_.size());
     }
 
     // Safety skip value
@@ -815,6 +864,8 @@ private:
         assert(std::addressof(other) != this);
         using std::swap;
         swap(this->buffer_, other.buffer_);
+        swap(this->pos_, other.pos_);
+        swap(this->size_, other.size_);
     }
 };
 
@@ -822,5 +873,14 @@ using InputStream = BasicInputStream<char, std::char_traits<char>>;
 using WInputStream = BasicInputStream<wchar_t, std::char_traits<wchar_t>>;
 
 } // namespace ziplab
+
+namespace std {
+
+template <typename CharT, typename Traits = std::char_traits<CharT>>
+inline void swap(ziplab::BasicInputStream<CharT, Traits> & lhs, ziplab::BasicInputStream<CharT, Traits> & rhs) {
+    lhs.swap(rhs);
+}
+
+} // namespace std
 
 #endif // ZIPLAB_STREAM_INPUTSTREAM_HPP
