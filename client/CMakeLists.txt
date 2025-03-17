@@ -4,7 +4,7 @@ add_executable(ZipStudio)
 # Add client source file
 target_sources(ZipStudio
     PRIVATE
-        ${PROJECT_SOURCE_DIR}/client/ZipStudio/ZipStudio-Client.cpp
+        ${PROJECT_SOURCE_DIR}/client/ZipStudio/ZipStudio.cpp
 )
 
 # Link to the main project library

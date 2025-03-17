@@ -45,21 +45,21 @@ void ziplab_huffman_test()
 
 void ziplab_MemoryBuffer_test()
 {
-    char Buff[256];
-    std::memset(Buff, 1, sizeof(Buff));
+    char buff[256];
+    std::memset(buff, 1, sizeof(buff));
 
     ziplab::MemoryBuffer memoryBuffer;
     memoryBuffer.reserve(256);
-    memoryBuffer.copy(Buff, sizeof(Buff));
-    memoryBuffer.copy(Buff);
+    memoryBuffer.copy(buff, sizeof(buff));
+    memoryBuffer.copy(buff);
 }
 
 void ziplab_MemoryView_test()
 {
-    char Buff[256];
-    std::memset(Buff, 1, sizeof(Buff));
+    char buff[256];
+    std::memset(buff, 1, sizeof(buff));
 
-    ziplab::MemoryView memoryView(Buff);
+    ziplab::MemoryView memoryView(buff);
     memoryView.clear();
 }
 
