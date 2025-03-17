@@ -63,6 +63,17 @@ void ziplab_MemoryView_test()
     memoryView.clear();
 }
 
+void ziplab_InputStream_test()
+{
+    char buff[256];
+    std::memset(buff, 1, sizeof(buff));
+
+    ziplab::InputStream inputStream(buff);
+    inputStream.clear();
+
+    ziplab::MemoryBuffer & buffer = inputStream.buffer();
+}
+
 int main(int argc, char * argv[])
 {
     printf("Welcome to ZipStudio Client v1.0 .\n\n");
@@ -72,6 +83,8 @@ int main(int argc, char * argv[])
 
     ziplab_MemoryBuffer_test();
     ziplab_MemoryView_test();
+
+    ziplab_InputStream_test();
 
     return 0;
 }

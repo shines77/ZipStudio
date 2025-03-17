@@ -7,133 +7,135 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <array>
 #include <vector>
 #include <string>
-#include <queue>
-#include <unordered_map>
 #include <memory>
 #include <fstream>
 #include <sstream>
 
+#include "ziplab/stream/MemoryBuffer.h"
+
 namespace ziplab {
 
-class InputStream
+template <typename CharT, typename Traits = std::char_traits<CharT>>
+class BasicInputStream
 {
 public:
+    using char_type     = CharT;
+    using traits_type   = Traits;
+
     using size_type     = std::size_t;
     using diff_type     = std::ptrdiff_t;
-    using pos_type      = std::size_t;
-    using offset_type   = std::intptr_t;
+    using int_type      = typename traits_type::int_type;
+    using pos_type      = typename traits_type::pos_type;
+    using offset_type   = typename traits_type::off_type;
+
+    using string_type = std::basic_string<char_type, traits_type>;
+    using vector_type = std::vector<char_type>;
+
+    using memory_buffer_t = BasicMemoryBuffer<char_type, traits_type>;
 
 private:
-    const char * data_;
-    size_type    size_;
+    memory_buffer_t buffer_;
 
 public:
-    InputStream() : data_(nullptr), size_(0) {
+    BasicInputStream() : buffer_() {
     }
-    InputStream(size_type capacity) : data_(nullptr), size_(0) {
-        reserve(capacity);
-    }
-
-    InputStream(const InputStream & src) : data_(nullptr), size_(0) {
-        copy_data(src);
-    }
-    InputStream(InputStream && src) : data_(nullptr), size_(0) {
-        swap(src);
+    BasicInputStream(size_type capacity) : buffer_(capacity) {
     }
 
-    ~InputStream() {
+    BasicInputStream(const memory_buffer_t & src) : buffer_(src) {
+    }
+    BasicInputStream(memory_buffer_t && src) : buffer_(std::forward<memory_buffer_t>(src)) {
+    }
+
+    BasicInputStream(const char_type * data, size_type size) : buffer_(data, size) {
+    }
+
+    template <size_type N>
+    BasicInputStream(const char_type (&data)[N]) : buffer_(data, N) {
+    }
+
+    template <size_type N>
+    BasicInputStream(const std::array<string_type, N> & strings) : buffer_(strings) {
+    }
+
+    BasicInputStream(const string_type & src) : buffer_(src) {
+    }
+
+    BasicInputStream(const vector_type & src) : buffer_(src) {
+    }
+
+    template <typename Container>
+    BasicInputStream(const Container & src) : buffer_(src) {
+    }
+
+    BasicInputStream(const BasicInputStream & src) : buffer_(src.buffer()) {
+    }
+    BasicInputStream(BasicInputStream && src)
+        : buffer_(std::forward<memory_buffer_t>(src.buffer())) {
+    }
+
+    ~BasicInputStream() {
         destroy();
     }
 
-    bool is_valid() const { return (data() != nullptr); }
-    bool is_empty() const { return (size() == 0); }
+    bool is_valid() const { return (buffer_.data() != nullptr); }
+    bool is_empty() const { return (buffer_.size() == 0); }
 
-    char * data() { return const_cast<char *>(data_); }
-    const char * data() const { return data_; }
+    char_type * data() { return const_cast<char_type *>(buffer_.data()); }
+    const char_type * data() const { return buffer_.data(); }
 
-    size_type size() const { return size_; }
+    size_type size() const { return buffer_.size(); }
+
+    memory_buffer_t & buffer() { return buffer_; }
+    const memory_buffer_t & buffer() const { return buffer_; }
 
     void destroy() {
-        release();
+        buffer_.destroy();
     }
 
-    void reserve(size_type capacity) {
-        if (capacity > size()) {
-            destroy();
-            allocate(capacity);
-        }
+    void reserve(size_type new_capacity) {
+        buffer_.reserve(new_capacity);
     }
 
-    void resize(size_type new_size) {
-        if (new_size != size() && new_size > 0) {
-            destroy();
-            allocate(new_size);
-            clear_data();
-        }
+    void resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
+        buffer_.resize(new_size, fill_new, init_val);
     }
 
     void clear() {
-        if (data() != nullptr && size() > 0) {
-            clear_data();
-        }
+        buffer_.clear();
     }
 
-    void copy(const InputStream & src) {
-        if (std::addressof(src) != this) {
-            destroy();
-            copy_data(src);
-        }
+    void copy(const BasicInputStream & src) {
+        buffer_.copy(src);
     }
 
-    void swap(InputStream & other) {
+    void swap(BasicInputStream & other) {
         if (std::addressof(other) != this) {
             swap_data(other);
         }
     }
 
 private:
-    const char * allocate(size_type capacity) {
-        assert(data_ == nullptr);
-        assert(size_ == 0);
-        const char * new_data = new char[capacity];
-        data_ = new_data;
-        size_ = capacity;
-        return new_data;
-    }
-
-    void release() {
-        if (data_ != nullptr) {
-            delete[] data_;
-            data_ = nullptr;
-            size_ = 0;
-        }
-    }
-
     inline void clear_data() {
-        assert(data() != nullptr);
-        assert(size() > 0);
-        std::memset((void *)data(), 0, size());
+        //
     }
 
-    inline void copy_data(const InputStream & src) {
-        assert(data() == nullptr);
-        assert(size() == 0);
-        if (src.data() != nullptr && src.size() != 0) {
-            size_type new_size = src.size();
-            const char * new_data = allocate(new_size);
-            std::memcpy((void *)new_data, (const void *)src.data(), new_size);
-        }
+    inline void copy_data(const BasicInputStream & src) {
+        //
     }
 
-    inline void swap_data(InputStream & other) {
+    inline void swap_data(BasicInputStream & other) {
         assert(std::addressof(other) != this);
         using std::swap;
-        swap(this->data_, other.data_);
-        swap(this->size_, other.size_);
+        swap(this->buffer_, other.buffer_);
     }
 };
+
+using InputStream = BasicInputStream<char, std::char_traits<char>>;
+using WInputStream = BasicInputStream<wchar_t, std::char_traits<wchar_t>>;
 
 } // namespace ziplab
 
