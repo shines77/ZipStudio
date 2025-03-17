@@ -101,12 +101,19 @@ public:
         }
     }
 
+    // Ensure reserved space of the specified size, but do not perform any data initialization,
+    // and don't keep the old data.
     void reserve(size_type new_capacity) {
         // If the new capacity is less than or equal to the old size, do nothing!
         if (new_capacity > size()) {
             // Allow the new capacity is 0.
             reserve_impl<false, false>(new_capacity);
         }
+    }
+
+    // Allocate a new buffer of specified size and don't keep the old data.
+    void resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
+        resize_impl<false>(new_size, fill_new, init_val);
     }
 
     // Ensure reserved space of the specified size, but do not perform any data initialization,
@@ -117,11 +124,6 @@ public:
             // Allow the new capacity is 0.
             reserve_impl<false, true>(new_capacity);
         }
-    }
-
-    // Allocate a new buffer of specified size and don't keep the old data.
-    void resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
-        resize_impl<false>(new_size, fill_new, init_val);
     }
 
     // Allocate a new buffer of specified size and keep the old data.
@@ -369,7 +371,7 @@ private:
 
 /*
 template <typename CharT, typename Traits = std::char_traits<CharT>>
-void swap(BasicMemoryBuffer<CharT, Traits> & lhs, BasicMemoryBuffer<CharT, Traits> & rhs) {
+inline void swap(BasicMemoryBuffer<CharT, Traits> & lhs, BasicMemoryBuffer<CharT, Traits> & rhs) {
     lhs.swap(rhs);
 }
 //*/
@@ -378,5 +380,14 @@ using MemoryBuffer = BasicMemoryBuffer<char, std::char_traits<char>>;
 using WMemoryBuffer = BasicMemoryBuffer<wchar_t, std::char_traits<wchar_t>>;
 
 } // namespace ziplab
+
+namespace std {
+
+template <typename CharT, typename Traits = std::char_traits<CharT>>
+inline void swap(ziplab::BasicMemoryBuffer<CharT, Traits> & lhs, ziplab::BasicMemoryBuffer<CharT, Traits> & rhs) {
+    lhs.swap(rhs);
+}
+
+} // namespace std
 
 #endif // ZIPLAB_STREAM_MEMORYBUFFER_HPP

@@ -48,10 +48,13 @@ void ziplab_MemoryBuffer_test()
     char buff[256];
     std::memset(buff, 1, sizeof(buff));
 
-    ziplab::MemoryBuffer memoryBuffer;
+    ziplab::MemoryBuffer memoryBuffer, memoryBuffer2;
     memoryBuffer.reserve(256);
     memoryBuffer.copy(buff, sizeof(buff));
     memoryBuffer.copy(buff);
+
+    std::swap(memoryBuffer, memoryBuffer2);
+    std::swap(memoryBuffer, memoryBuffer);
 }
 
 void ziplab_MemoryView_test()
@@ -66,12 +69,30 @@ void ziplab_MemoryView_test()
 void ziplab_InputStream_test()
 {
     char buff[256];
-    std::memset(buff, 1, sizeof(buff));
+    std::memset(buff, 0, sizeof(buff));
+    for (std::size_t i = 0; i < 256; i++) {
+        buff[i] = (char)i;
+    }
 
     ziplab::InputStream inputStream(buff);
-    inputStream.clear();
+    //inputStream.clear();
 
     ziplab::MemoryBuffer & buffer = inputStream.buffer();
+
+    bool b = inputStream.readBool();
+    std::int8_t sbyte = inputStream.readByte();
+    std::uint8_t byte = inputStream.readSByte();
+    std::int32_t i32 = inputStream.readInt32();
+    std::uint32_t u32 = inputStream.readUInt32();
+    void * vptr = inputStream.readVoidPtr();
+
+#if defined(_MSC_VER)
+    printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = 0x%p\n\n",
+           (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
+#else
+    printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = %p\n\n",
+           (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
+#endif
 }
 
 int main(int argc, char * argv[])
@@ -86,5 +107,8 @@ int main(int argc, char * argv[])
 
     ziplab_InputStream_test();
 
+#if defined(_MSC_VER)
+    ::system("pause");
+#endif
     return 0;
 }

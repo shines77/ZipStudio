@@ -38,56 +38,59 @@ public:
 
 private:
     memory_buffer_t buffer_;
+    size_type pos_;
 
 public:
-    BasicInputStream() : buffer_() {
+    BasicInputStream() : buffer_(), pos_(0) {
     }
-    BasicInputStream(size_type capacity) : buffer_(capacity) {
-    }
-
-    BasicInputStream(const memory_buffer_t & src) : buffer_(src) {
-    }
-    BasicInputStream(memory_buffer_t && src) : buffer_(std::forward<memory_buffer_t>(src)) {
+    BasicInputStream(size_type capacity) : buffer_(capacity), pos_(0) {
     }
 
-    BasicInputStream(const char_type * data, size_type size) : buffer_(data, size) {
+    BasicInputStream(const memory_buffer_t & src) : buffer_(src), pos_(0) {
+    }
+    BasicInputStream(memory_buffer_t && src)
+        : buffer_(std::forward<memory_buffer_t>(src)), pos_(0) {
     }
 
-    template <size_type N>
-    BasicInputStream(const char_type (&data)[N]) : buffer_(data, N) {
+    BasicInputStream(const char_type * data, size_type size) : buffer_(data, size), pos_(0) {
     }
 
     template <size_type N>
-    BasicInputStream(const std::array<string_type, N> & strings) : buffer_(strings) {
+    BasicInputStream(const char_type (&data)[N]) : buffer_(data, N), pos_(0) {
     }
 
-    BasicInputStream(const string_type & src) : buffer_(src) {
+    template <size_type N>
+    BasicInputStream(const std::array<string_type, N> & strings) : buffer_(strings), pos_(0) {
     }
 
-    BasicInputStream(const vector_type & src) : buffer_(src) {
+    BasicInputStream(const string_type & src) : buffer_(src), pos_(0) {
+    }
+
+    BasicInputStream(const vector_type & src) : buffer_(src), pos_(0) {
     }
 
     template <typename Container>
-    BasicInputStream(const Container & src) : buffer_(src) {
+    BasicInputStream(const Container & src) : buffer_(src), pos_(0) {
     }
 
-    BasicInputStream(const BasicInputStream & src) : buffer_(src.buffer()) {
+    BasicInputStream(const BasicInputStream & src) : buffer_(src.buffer()), pos_(0) {
     }
     BasicInputStream(BasicInputStream && src)
-        : buffer_(std::forward<memory_buffer_t>(src.buffer())) {
+        : buffer_(std::forward<memory_buffer_t>(src.buffer())), pos_(0) {
     }
 
     ~BasicInputStream() {
         destroy();
     }
 
-    bool is_valid() const { return (buffer_.data() != nullptr); }
-    bool is_empty() const { return (buffer_.size() == 0); }
+    bool is_valid() const { return buffer_.is_valid(); }
+    bool is_empty() const { return buffer_.is_empty(); }
 
-    char_type * data() { return const_cast<char_type *>(buffer_.data()); }
+    char_type * data() { return buffer_.data(); }
     const char_type * data() const { return buffer_.data(); }
 
     size_type size() const { return buffer_.size(); }
+    size_type pos() const { return pos_; }
 
     memory_buffer_t & buffer() { return buffer_; }
     const memory_buffer_t & buffer() const { return buffer_; }
@@ -104,6 +107,14 @@ public:
         buffer_.resize(new_size, fill_new, init_val);
     }
 
+    void reserve_and_keep(size_type new_capacity) {
+        buffer_.reserve_and_keep(new_capacity);
+    }
+
+    void resize_and_keep(size_type new_size, bool fill_new = true, char_type init_val = 0) {
+        buffer_.resize_and_keep(new_size, fill_new, init_val);
+    }
+
     void clear() {
         buffer_.clear();
     }
@@ -115,6 +126,245 @@ public:
     void swap(BasicInputStream & other) {
         if (std::addressof(other) != this) {
             swap_data(other);
+        }
+    }
+
+    bool is_overflow() const {
+        return (pos() < buffer_.size());
+    }
+
+    template <typename T>
+    bool is_overflow(const T & type) const {
+        ZIPLAB_UNUSED(type);
+        return ((pos() + sizeof(type)) <= buffer_.size());
+    }
+
+    template <typename T>
+    bool readValue(T & val) {
+        static constexpr size_type step = sizeof(T);
+        if ((pos_ + step) <= buffer_.size()) {
+            val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
+            pos_ += step;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool readBool(bool & b) {
+        std::uint8_t byte = static_cast<std::uint8_t>(b);
+        bool success = readValue(byte);
+        b = (byte != 0);
+        return success;
+    }
+
+    bool readChar(char & ch) {
+        return readValue(ch);
+    }
+
+    bool readUChar(unsigned char & ch) {
+        return readValue(ch);
+    }
+
+    bool readWChar(wchar_t & wch) {
+        return readValue(wch);
+    }
+
+    bool readSByte(std::int8_t & sbyte) {
+        return readValue(sbyte);
+    }
+
+    bool readByte(std::uint8_t & byte) {
+        return readValue(byte);
+    }
+
+    bool readInt8(std::int8_t & val) {
+        return readValue(val);
+    }
+
+    bool readUInt8(std::uint8_t & val) {
+        return readValue(val);
+    }
+
+    bool readInt16(std::int16_t & val) {
+        return readValue(val);
+    }
+
+    bool readUInt16(std::uint16_t & val) {
+        return readValue(val);
+    }
+
+    bool readInt32(std::int32_t & val) {
+        return readValue(val);
+    }
+
+    bool readUInt32(std::uint32_t & val) {
+        return readValue(val);
+    }
+
+    bool readInt64(std::int64_t & val) {
+        return readValue(val);
+    }
+
+    bool readUInt64(std::uint64_t & val) {
+        return readValue(val);
+    }
+
+    bool readSizeT(std::size_t & val) {
+        return readValue(val);
+    }
+
+    bool readFloat(float & val) {
+        return readValue(val);
+    }
+
+    bool readDouble(double & val) {
+        return readValue(val);
+    }
+
+    bool readVoidPtr(void * & pt) {
+        return readValue(pt);
+    }
+
+    template <typename T>
+    bool readPtr(T * & pt) {
+        return readValue(pt);
+    }
+
+    // Unsafe read value
+    template <typename T>
+    void usReadValue(T & val) {
+        static constexpr size_type step = sizeof(T);
+        assert((pos_ + step) <= buffer_.size());
+        val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
+        pos_ += step;
+    }
+
+    bool readBool() {
+        std::uint8_t byte;
+        usReadValue(byte);
+        return (byte != 0);
+    }
+
+    char readChar() {
+        char ch;
+        usReadValue(ch);
+        return ch;
+    }
+
+    unsigned char readUChar() {
+        unsigned char ch;
+        usReadValue(ch);
+        return ch;
+    }
+
+    wchar_t readWChar() {
+        wchar_t ch;
+        usReadValue(ch);
+        return ch;
+    }
+
+    std::int8_t readSByte() {
+        std::int8_t sbyte;
+        usReadValue(sbyte);
+        return sbyte;
+    }
+
+    std::uint8_t readByte() {
+        std::uint8_t byte;
+        usReadValue(byte);
+        return byte;
+    }
+
+    std::int8_t readInt8() {
+        std::int8_t val;
+        usReadValue(val);
+        return val;
+    }
+
+    std::uint8_t readUInt8() {
+        std::uint8_t val;
+        usReadValue(val);
+        return val;
+    }
+
+    std::int16_t readInt16() {
+        std::int16_t val;
+        usReadValue(val);
+        return val;
+    }
+
+    std::uint16_t readUInt16() {
+        std::uint16_t val;
+        usReadValue(val);
+        return val;
+    }
+
+    std::int32_t readInt32() {
+        std::int32_t val;
+        usReadValue(val);
+        return val;
+    }
+
+    std::uint32_t readUInt32() {
+        std::uint32_t val;
+        usReadValue(val);
+        return val;
+    }
+
+    std::int64_t readInt64() {
+        std::int64_t val;
+        usReadValue(val);
+        return val;
+    }
+
+    std::uint64_t readUInt64() {
+        std::uint64_t val;
+        usReadValue(val);
+        return val;
+    }
+
+    std::size_t readSizeT() {
+        std::size_t val;
+        usReadValue(val);
+        return val;
+    }
+
+    float readFloat() {
+        float val;
+        usReadValue(val);
+        return val;
+    }
+
+    double readDouble() {
+        double val;
+        usReadValue(val);
+        return val;
+    }
+
+    void * readVoidPtr() {
+        void * pt;
+        usReadValue(pt);
+        return pt;
+    }
+
+    template <typename T>
+    T * readPtr() {
+        T * pt;
+        usReadValue(pt);
+        return pt;
+    }
+
+protected:
+    template <typename T>
+    bool readPtrType(T *& pt) {
+        static constexpr size_type step = sizeof(T *);
+        if ((pos_ + step) <= buffer_.size()) {
+            pt = *(static_cast<T **>(buffer_.data() + pos_));
+            pos_ += step;
+            return true;
+        } else {
+            return false;
         }
     }
 
