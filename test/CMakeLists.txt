@@ -11,5 +11,5 @@ target_sources(ZipLab_test
 target_link_libraries(ZipLab_test
     PRIVATE
         zipstd
-        ziplad
+        ziplab
 )
