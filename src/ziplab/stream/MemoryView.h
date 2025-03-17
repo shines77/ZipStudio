@@ -13,6 +13,7 @@
 #include <cstring>  // For std::strlen()
 #include <memory>
 
+#include "ziplab/basic/stddef.h"
 #include "ziplab/stream/MemoryBuffer.h"
 
 namespace ziplab {

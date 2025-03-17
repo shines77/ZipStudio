@@ -15,6 +15,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "ziplab/basic/stddef.h"
+
 namespace ziplab {
 
 class FileReader

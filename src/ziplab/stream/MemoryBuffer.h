@@ -14,6 +14,8 @@
 #include <memory>
 #include <limits>   // For std::min(), std::max()
 
+#include "ziplab/basic/stddef.h"
+
 namespace ziplab {
 
 template <typename CharT, typename Traits = std::char_traits<CharT>>

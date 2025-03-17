@@ -14,6 +14,9 @@
 #include <fstream>
 #include <sstream>
 
+#include "ziplab/basic/stddef.h"
+#include "ziplab/stream/MemoryBuffer.h"
+
 namespace ziplab {
 
 template <typename CharT, typename Traits = std::char_traits<CharT>>
