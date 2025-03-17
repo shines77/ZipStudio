@@ -236,7 +236,7 @@ public:
     // Unsafe skip value
     template <typename T>
     void usSkipValue(T & val) {
-        static constexpr size_type step = sizeof(val);
+        static constexpr size_type step = sizeof(T);
         assert((pos_ + step) <= buffer_.size());
         ZIPLAB_UNUSED(val);
         pos_ += step;
@@ -347,14 +347,14 @@ public:
     void skipVoidPtr() {
         void * pt;
         usSkipValue(pt);
-        pt = nullptr;
+        ZIPLAB_UNUSED(pt);
     }
 
     template <typename T>
     void skipPtr() {
         T * pt;
         usSkipValue(pt);
-        pt = nullptr;
+        ZIPLAB_UNUSED(pt);
     }
 
     // Safety peek value
