@@ -87,5 +87,14 @@
     <ClInclude Include="..\..\..\src\ziplab\stream\FileWriter.h">
       <Filter>src\stream</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\StreamBuffer.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\MemoryBuffer.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\MemoryView.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

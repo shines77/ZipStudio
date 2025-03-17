@@ -41,7 +41,10 @@
     <ClInclude Include="..\..\..\src\ziplab\stream\FileReader.h" />
     <ClInclude Include="..\..\..\src\ziplab\stream\FileWriter.h" />
     <ClInclude Include="..\..\..\src\ziplab\stream\InputStream.h" />
+    <ClInclude Include="..\..\..\src\ziplab\stream\MemoryBuffer.h" />
+    <ClInclude Include="..\..\..\src\ziplab\stream\MemoryView.h" />
     <ClInclude Include="..\..\..\src\ziplab\stream\OutputStream.h" />
+    <ClInclude Include="..\..\..\src\ziplab\stream\StreamBuffer.h" />
     <ClInclude Include="..\..\..\src\ziplab\version.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

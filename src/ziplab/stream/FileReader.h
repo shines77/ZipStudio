@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <assert.h>
+
 #include <cstdint>
 #include <cstddef>
 #include <vector>
@@ -12,8 +14,6 @@
 #include <memory>
 #include <fstream>
 #include <sstream>
-
-#include <assert.h>
 
 namespace ziplab {
 

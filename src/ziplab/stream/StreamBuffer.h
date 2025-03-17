@@ -1,5 +1,5 @@
-#ifndef ZIPLAB_STREAM_INPUTSTREAM_HPP
-#define ZIPLAB_STREAM_INPUTSTREAM_HPP
+#ifndef ZIPLAB_STREAM_STREAMBUFFER_HPP
+#define ZIPLAB_STREAM_STREAMBUFFER_HPP
 
 #pragma once
 
@@ -9,41 +9,42 @@
 #include <cstddef>
 #include <vector>
 #include <string>
-#include <queue>
-#include <unordered_map>
 #include <memory>
-#include <fstream>
-#include <sstream>
 
 namespace ziplab {
 
-class InputStream
+template <typename CharT, typename Traits = std::char_traits<CharT>>
+class BasicStreamBuffer
 {
 public:
+    using char_type     = CharT;
+    using traits_type   = Traits;
+
     using size_type     = std::size_t;
     using diff_type     = std::ptrdiff_t;
-    using pos_type      = std::size_t;
-    using offset_type   = std::intptr_t;
+    using int_type      = typename traits_type::int_type;
+    using pos_type      = typename traits_type::pos_type;
+    using offset_type   = typename traits_type::off_type;
 
 private:
     const char * data_;
     size_type    size_;
 
 public:
-    InputStream() : data_(nullptr), size_(0) {
+    BasicStreamBuffer() : data_(nullptr), size_(0) {
     }
-    InputStream(size_type capacity) : data_(nullptr), size_(0) {
+    BasicStreamBuffer(size_type capacity) : data_(nullptr), size_(0) {
         reserve(capacity);
     }
 
-    InputStream(const InputStream & src) : data_(nullptr), size_(0) {
+    BasicStreamBuffer(const BasicStreamBuffer & src) : data_(nullptr), size_(0) {
         copy_data(src);
     }
-    InputStream(InputStream && src) : data_(nullptr), size_(0) {
+    BasicStreamBuffer(BasicStreamBuffer && src) : data_(nullptr), size_(0) {
         swap(src);
     }
 
-    ~InputStream() {
+    ~BasicStreamBuffer() {
         destroy();
     }
 
@@ -80,14 +81,14 @@ public:
         }
     }
 
-    void copy(const InputStream & src) {
+    void copy(const BasicStreamBuffer & src) {
         if (std::addressof(src) != this) {
             destroy();
             copy_data(src);
         }
     }
 
-    void swap(InputStream & other) {
+    void swap(BasicStreamBuffer & other) {
         if (std::addressof(other) != this) {
             swap_data(other);
         }
@@ -117,7 +118,7 @@ private:
         std::memset((void *)data(), 0, size());
     }
 
-    inline void copy_data(const InputStream & src) {
+    inline void copy_data(const BasicStreamBuffer & src) {
         assert(data() == nullptr);
         assert(size() == 0);
         if (src.data() != nullptr && src.size() != 0) {
@@ -127,7 +128,7 @@ private:
         }
     }
 
-    inline void swap_data(InputStream & other) {
+    inline void swap_data(BasicStreamBuffer & other) {
         assert(std::addressof(other) != this);
         using std::swap;
         swap(this->data_, other.data_);
@@ -135,6 +136,9 @@ private:
     }
 };
 
+using StreamBuffer = BasicStreamBuffer<char, std::char_traits<char>>;
+using WStreamBuffer = BasicStreamBuffer<wchar_t, std::char_traits<wchar_t>>;
+
 } // namespace ziplab
 
-#endif // ZIPLAB_STREAM_INPUTSTREAM_HPP
+#endif // ZIPLAB_STREAM_STREAMBUFFER_HPP
