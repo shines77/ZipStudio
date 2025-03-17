@@ -139,6 +139,222 @@ public:
         return ((pos() + sizeof(type)) <= buffer_.size());
     }
 
+    // Safety peek value
+    template <typename T>
+    bool peekValue(T & val) {
+        static constexpr size_type step = sizeof(T);
+        if ((pos_ + step) <= buffer_.size()) {
+            val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool peekBool(bool & b) {
+        std::uint8_t byte = static_cast<std::uint8_t>(b);
+        bool success = peekValue(byte);
+        b = (byte != 0);
+        return success;
+    }
+
+    bool peekChar(char & ch) {
+        return peekValue(ch);
+    }
+
+    bool peekUChar(unsigned char & ch) {
+        return peekValue(ch);
+    }
+
+    bool peekWChar(wchar_t & wch) {
+        return peekValue(wch);
+    }
+
+    bool peekSByte(std::int8_t & sbyte) {
+        return peekValue(sbyte);
+    }
+
+    bool peekByte(std::uint8_t & byte) {
+        return peekValue(byte);
+    }
+
+    bool peekInt8(std::int8_t & val) {
+        return peekValue(val);
+    }
+
+    bool peekUInt8(std::uint8_t & val) {
+        return peekValue(val);
+    }
+
+    bool peekInt16(std::int16_t & val) {
+        return peekValue(val);
+    }
+
+    bool peekUInt16(std::uint16_t & val) {
+        return peekValue(val);
+    }
+
+    bool peekInt32(std::int32_t & val) {
+        return peekValue(val);
+    }
+
+    bool peekUInt32(std::uint32_t & val) {
+        return peekValue(val);
+    }
+
+    bool peekInt64(std::int64_t & val) {
+        return peekValue(val);
+    }
+
+    bool peekUInt64(std::uint64_t & val) {
+        return peekValue(val);
+    }
+
+    bool peekSizeT(std::size_t & val) {
+        return peekValue(val);
+    }
+
+    bool peekFloat(float & val) {
+        return peekValue(val);
+    }
+
+    bool peekDouble(double & val) {
+        return peekValue(val);
+    }
+
+    bool peekVoidPtr(void * & pt) {
+        return peekValue(pt);
+    }
+
+    template <typename T>
+    bool peekPtr(T * & pt) {
+        return peekValue(pt);
+    }
+
+    // Unsafe peek value
+    template <typename T>
+    void usPeekValue(T & val) {
+        static constexpr size_type step = sizeof(T);
+        assert((pos_ + step) <= buffer_.size());
+        val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
+    }
+
+    bool peekBool() {
+        std::uint8_t byte;
+        usPeekValue(byte);
+        return (byte != 0);
+    }
+
+    char peekChar() {
+        char ch;
+        usPeekValue(ch);
+        return ch;
+    }
+
+    unsigned char peekUChar() {
+        unsigned char ch;
+        usPeekValue(ch);
+        return ch;
+    }
+
+    wchar_t peekWChar() {
+        wchar_t ch;
+        usPeekValue(ch);
+        return ch;
+    }
+
+    std::int8_t peekSByte() {
+        std::int8_t sbyte;
+        usPeekValue(sbyte);
+        return sbyte;
+    }
+
+    std::uint8_t peekByte() {
+        std::uint8_t byte;
+        usPeekValue(byte);
+        return byte;
+    }
+
+    std::int8_t peekInt8() {
+        std::int8_t val;
+        usPeekValue(val);
+        return val;
+    }
+
+    std::uint8_t peekUInt8() {
+        std::uint8_t val;
+        usPeekValue(val);
+        return val;
+    }
+
+    std::int16_t peekInt16() {
+        std::int16_t val;
+        usPeekValue(val);
+        return val;
+    }
+
+    std::uint16_t peekUInt16() {
+        std::uint16_t val;
+        usPeekValue(val);
+        return val;
+    }
+
+    std::int32_t peekInt32() {
+        std::int32_t val;
+        usPeekValue(val);
+        return val;
+    }
+
+    std::uint32_t peekUInt32() {
+        std::uint32_t val;
+        usPeekValue(val);
+        return val;
+    }
+
+    std::int64_t peekInt64() {
+        std::int64_t val;
+        usPeekValue(val);
+        return val;
+    }
+
+    std::uint64_t peekUInt64() {
+        std::uint64_t val;
+        usPeekValue(val);
+        return val;
+    }
+
+    std::size_t peekSizeT() {
+        std::size_t val;
+        usPeekValue(val);
+        return val;
+    }
+
+    float peekFloat() {
+        float val;
+        usPeekValue(val);
+        return val;
+    }
+
+    double peekDouble() {
+        double val;
+        usPeekValue(val);
+        return val;
+    }
+
+    void * peekVoidPtr() {
+        void * pt;
+        usPeekValue(pt);
+        return pt;
+    }
+
+    template <typename T>
+    T * peekPtr() {
+        T * pt;
+        usPeekValue(pt);
+        return pt;
+    }
+
+    // Safety read value
     template <typename T>
     bool readValue(T & val) {
         static constexpr size_type step = sizeof(T);

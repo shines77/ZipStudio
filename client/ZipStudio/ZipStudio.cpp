@@ -79,20 +79,43 @@ void ziplab_InputStream_test()
 
     ziplab::MemoryBuffer & buffer = inputStream.buffer();
 
-    bool b = inputStream.readBool();
-    std::int8_t sbyte = inputStream.readByte();
-    std::uint8_t byte = inputStream.readSByte();
-    std::int32_t i32 = inputStream.readInt32();
-    std::uint32_t u32 = inputStream.readUInt32();
-    void * vptr = inputStream.readVoidPtr();
+    {
+        bool b = inputStream.readBool();
+        std::int8_t sbyte = inputStream.readByte();
+        std::uint8_t byte = inputStream.readSByte();
+        std::int32_t i32 = inputStream.readInt32();
+        std::uint32_t u32 = inputStream.readUInt32();
+        void * vptr = inputStream.readVoidPtr();
+
+        printf("InputStream.readValue();\n\n");
 
 #if defined(_MSC_VER)
-    printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = 0x%p\n\n",
-           (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
+        printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = 0x%p\n\n",
+            (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
 #else
-    printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = %p\n\n",
-           (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
+        printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = %p\n\n",
+            (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
 #endif
+    }
+
+    {
+        bool b = inputStream.peekBool();
+        std::int8_t sbyte = inputStream.peekByte();
+        std::uint8_t byte = inputStream.peekSByte();
+        std::int32_t i32 = inputStream.peekInt32();
+        std::uint32_t u32 = inputStream.peekUInt32();
+        void * vptr = inputStream.peekVoidPtr();
+
+        printf("InputStream.peekValue();\n\n");
+
+#if defined(_MSC_VER)
+        printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = 0x%p\n\n",
+            (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
+#else
+        printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = %p\n\n",
+            (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
+#endif
+    }
 }
 
 int main(int argc, char * argv[])
