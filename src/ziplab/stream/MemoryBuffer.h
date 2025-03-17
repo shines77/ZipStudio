@@ -227,7 +227,7 @@ private:
 
     template <typename Container>
     inline void copy_data_from_container(const Container & src) {
-        using typename Container::const_iterator const_iterator;
+        using const_iterator = typename Container::const_iterator;
         assert(data() != nullptr);
         assert(size() == src.size());
         const char_type * dest = data();
@@ -306,7 +306,7 @@ private:
     template <typename Container>
     inline void copy_from_container_impl(const char_type * dest_data, size_type dest_size,
                                          const Container & src) {
-        if (dest_size != src_size) {
+        if (dest_size != src.size()) {
             // If the source size is not equal to the data size, destroy and reallocate a new buffer,
             // then copy the data from source data.
             if (is_valid()) {
