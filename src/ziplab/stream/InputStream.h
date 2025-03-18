@@ -16,18 +16,24 @@
 
 #include "ziplab/basic/stddef.h"
 #include "ziplab/stream/MemoryBuffer.h"
+#include "ziplab/stream/MemoryView.h"
 
 namespace ziplab {
 
-template <typename CharT, typename Traits = std::char_traits<CharT>>
+template <typename MemoryBufferT, typename CharT, typename Traits = std::char_traits<CharT>>
 class BasicInputStream
 {
 public:
+    using buffer_type   = MemoryBufferT;
     using char_type     = CharT;
     using traits_type   = Traits;
 
-    using size_type     = std::size_t;
-    using diff_type     = std::ptrdiff_t;
+    using memory_buffer_t = BasicMemoryBuffer<char_type, traits_type>;
+    using memory_view_t   = BasicMemoryView<char_type, traits_type>;
+
+    using size_type     = typename memory_buffer_t::size_type;
+    using diff_type     = typename memory_buffer_t::diff_type;
+    using index_type    = typename memory_buffer_t::index_type;
     using int_type      = typename traits_type::int_type;
     using pos_type      = typename traits_type::pos_type;
     using offset_type   = typename traits_type::off_type;
@@ -35,11 +41,9 @@ public:
     using string_type = std::basic_string<char_type, traits_type>;
     using vector_type = std::vector<char_type>;
 
-    using memory_buffer_t = BasicMemoryBuffer<char_type, traits_type>;
-
 private:
-    memory_buffer_t buffer_;
-    size_type pos_;
+    buffer_type buffer_;
+    index_type pos_;
     size_type size_;
 
 public:
@@ -100,9 +104,13 @@ public:
     char_type * data() { return buffer_.data(); }
     const char_type * data() const { return buffer_.data(); }
 
-    size_type pos() const { return pos_; }
+    index_type pos() const { return pos_; }
     size_type size() const { return size_; }
     size_type capacity() const { return buffer_.size(); }
+
+    size_type upos() const { return static_cast<size_type>(pos_); }
+    index_type ssize() const { return static_cast<index_type>(size_); }
+    index_type scapacity() const { return buffer_.ssize(); }
 
     memory_buffer_t & buffer() { return buffer_; }
     const memory_buffer_t & buffer() const { return buffer_; }
@@ -122,8 +130,7 @@ public:
 
     void destroy() {
         buffer_.destroy();
-        pos_ = 0;
-        size_ = 0;
+        reset();
     }
 
     void reset() {
@@ -133,8 +140,8 @@ public:
 
     void reserve(size_type new_capacity) {
         buffer_.reserve(new_capacity);
-        assert(pos() <= buffer_.size());
-        assert(size() <= buffer_.size());
+        assert(size() <= capacity());
+        assert(pos() <= ssize());
     }
 
     void resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
@@ -142,19 +149,19 @@ public:
         reset();
     }
 
-    void reserve_and_keep(size_type new_capacity) {
-        buffer_.reserve_and_keep(new_capacity);
-        assert(pos() <= buffer_.size());
-        assert(size() <= buffer_.size());
+    void keep_reserve(size_type new_capacity) {
+        buffer_.keep_reserve(new_capacity);
+        assert(size() <= capacity());
+        assert(pos() <= ssize());        
     }
 
-    void resize_and_keep(size_type new_size, bool fill_new = true, char_type init_val = 0) {
-        buffer_.resize_and_keep(new_size, fill_new, init_val);
-        if (pos() > buffer_.size()) {
-            pos_ = buffer_.size()
+    void keep_resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
+        buffer_.keep_resize(new_size, fill_new, init_val);
+        if (size() > capacity()) {
+            size_ = capacity();
         }
-        if (size() > buffer_.size()) {
-            size_ = buffer_.size()
+        if (pos() > ssize()) {
+            pos_ = ssize();
         }
     }
 
@@ -180,20 +187,43 @@ public:
     }
 
     bool is_overflow() const {
-        return (pos() < buffer_.size());
+        return (pos() < ssize());
     }
 
     template <typename T>
     bool is_overflow(const T & val) const {
-        ZIPLAB_UNUSED(type);
-        return ((pos() + sizeof(val)) <= buffer_.size());
+        ZIPLAB_UNUSED(val);
+        return ((pos() + sizeof(val)) <= ssize());
+    }
+
+    index_type back(offset_type offset) {
+        pos_ -= static_cast<index_type>(offset);
+        return pos_;
+    }
+
+    index_type skip(offset_type offset) {
+        pos_ += static_cast<index_type>(offset);
+        return pos_;
+    }
+
+    void seekToBegin() {
+        pos_ = 0;
+    }
+
+    void seekToEnd() {
+        pos_ = ssize();
+    }
+
+    void seekTo(index_type pos) {
+        pos_ = pos;
     }
 
     // Safety skip value
     template <typename T>
     bool skipValue(T & val) {
-        static constexpr size_type step = sizeof(T);
-        if ((pos_ + step) <= buffer_.size()) {
+        static constexpr index_type step = sizeof(T);
+        assert(pos_ >= 0);
+        if ((pos_ + step) <= ssize()) {
             ZIPLAB_UNUSED(val);
             pos_ += step;
             return true;
@@ -285,8 +315,9 @@ public:
     // Unsafe skip value
     template <typename T>
     void usSkipValue(T & val) {
-        static constexpr size_type step = sizeof(T);
-        assert((pos_ + step) <= buffer_.size());
+        static constexpr index_type step = sizeof(T);
+        assert(pos_ >= 0);
+        assert((pos_ + step) <= ssize());
         ZIPLAB_UNUSED(val);
         pos_ += step;
     }
@@ -409,8 +440,9 @@ public:
     // Safety peek value
     template <typename T>
     bool peekValue(T & val) {
-        static constexpr size_type step = sizeof(T);
-        if ((pos_ + step) <= buffer_.size()) {
+        static constexpr index_type step = sizeof(T);
+        assert(pos_ >= 0);
+        if ((pos_ + step) <= ssize()) {
             val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
             return true;
         } else {
@@ -501,8 +533,9 @@ public:
     // Unsafe peek value
     template <typename T>
     void usPeekValue(T & val) {
-        static constexpr size_type step = sizeof(T);
-        assert((pos_ + step) <= buffer_.size());
+        static constexpr index_type step = sizeof(T);
+        assert(pos >= 0);
+        assert((pos_ + step) <= ssize());
         val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
     }
 
@@ -624,8 +657,9 @@ public:
     // Safety read value
     template <typename T>
     bool readValue(T & val) {
-        static constexpr size_type step = sizeof(T);
-        if ((pos_ + step) <= buffer_.size()) {
+        static constexpr index_type step = sizeof(T);
+        assert(pos_ >= 0);
+        if ((pos_ + step) <= ssize()) {
             val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
             pos_ += step;
             return true;
@@ -717,8 +751,9 @@ public:
     // Unsafe read value
     template <typename T>
     void usReadValue(T & val) {
-        static constexpr size_type step = sizeof(T);
-        assert((pos_ + step) <= buffer_.size());
+        static constexpr index_type step = sizeof(T);
+        assert(pos_ >= 0);
+        assert((pos_ + step) <= ssize());
         val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
         pos_ += step;
     }
@@ -839,17 +874,7 @@ public:
     }
 
 protected:
-    template <typename T>
-    bool readPtrType(T *& pt) {
-        static constexpr size_type step = sizeof(T *);
-        if ((pos_ + step) <= buffer_.size()) {
-            pt = *(static_cast<T **>(buffer_.data() + pos_));
-            pos_ += step;
-            return true;
-        } else {
-            return false;
-        }
-    }
+    //
 
 private:
     inline void clear_data() {
@@ -869,15 +894,19 @@ private:
     }
 };
 
-using InputStream = BasicInputStream<char, std::char_traits<char>>;
-using WInputStream = BasicInputStream<wchar_t, std::char_traits<wchar_t>>;
+using InputStreamBuffer  = BasicInputStream<BasicMemoryBuffer<char, std::char_traits<char>>, char, std::char_traits<char>>;
+using WInputStreamBuffer = BasicInputStream<BasicMemoryBuffer<wchar_t, std::char_traits<wchar_t>>, wchar_t, std::char_traits<wchar_t>>;
+
+using InputStreamView  = BasicInputStream<BasicMemoryView<char, std::char_traits<char>>, char, std::char_traits<char>>;
+using WInputStreamView = BasicInputStream<BasicMemoryView<wchar_t, std::char_traits<wchar_t>>, wchar_t, std::char_traits<wchar_t>>;
 
 } // namespace ziplab
 
 namespace std {
 
-template <typename CharT, typename Traits = std::char_traits<CharT>>
-inline void swap(ziplab::BasicInputStream<CharT, Traits> & lhs, ziplab::BasicInputStream<CharT, Traits> & rhs) {
+template <typename MemoryBufferT, typename CharT, typename Traits = std::char_traits<CharT>>
+inline void swap(ziplab::BasicInputStream<MemoryBufferT, CharT, Traits> & lhs,
+                 ziplab::BasicInputStream<MemoryBufferT, CharT, Traits> & rhs) {
     lhs.swap(rhs);
 }
 

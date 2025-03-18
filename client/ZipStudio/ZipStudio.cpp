@@ -74,7 +74,7 @@ void ziplab_InputStream_test()
         buff[i] = (char)i;
     }
 
-    ziplab::InputStream inputStream(buff);
+    ziplab::InputStreamBuffer inputStream(buff);
     //inputStream.clear();
 
     ziplab::MemoryBuffer & buffer = inputStream.buffer();

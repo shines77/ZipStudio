@@ -18,6 +18,10 @@
 
 namespace ziplab {
 
+// Forward declaration
+template <typename CharT, typename Traits>
+class BasicMemoryView;
+
 template <typename CharT, typename Traits = std::char_traits<CharT>>
 class BasicMemoryBuffer
 {
@@ -25,8 +29,11 @@ public:
     using char_type     = CharT;
     using traits_type   = Traits;
 
+    using memory_view_t = BasicMemoryView<char_type, traits_type>;
+
     using size_type     = std::size_t;
     using diff_type     = std::ptrdiff_t;
+    using index_type    = std::streamsize;
     using int_type      = typename traits_type::int_type;
     using pos_type      = typename traits_type::pos_type;
     using offset_type   = typename traits_type::off_type;
@@ -36,13 +43,16 @@ public:
 
 private:
     // It's allowed that when the data pointer is non-zero, the data size is zero.
-    const char_type * data_;
+
+    // Why change the order of member variables data and size,
+    // because it is for higher efficiency in the input and output streams.
     size_type         size_;
+    const char_type * data_;
 
 public:
-    BasicMemoryBuffer() : data_(nullptr), size_(0) {
+    BasicMemoryBuffer() : size_(0), data_(nullptr) {
     }
-    BasicMemoryBuffer(size_type capacity) : data_(nullptr), size_(0) {
+    BasicMemoryBuffer(size_type capacity) : BasicMemoryBuffer() {
         if (capacity > 0) {
             reserve_impl<true, false>(capacity);
         }
@@ -55,6 +65,10 @@ public:
         swap_data(src);
     }
 
+    BasicMemoryBuffer(const memory_view_t & src) : BasicMemoryBuffer() {
+        assgin_and_copy_data<true>(src.data(), src.size());
+    }
+
     BasicMemoryBuffer(const char_type * data, size_type size) : BasicMemoryBuffer() {
         assgin_and_copy_data<true>(data, size);
     }
@@ -65,7 +79,7 @@ public:
     }
 
     template <size_type N>
-    BasicMemoryBuffer(const std::array<string_type, N> & strings) {
+    BasicMemoryBuffer(const std::array<string_type, N> & strings) : BasicMemoryBuffer() {
         assgin_and_copy_data_from_container<true>(strings);
     }
 
@@ -94,6 +108,7 @@ public:
     const char_type * data() const { return data_; }
 
     size_type size() const { return size_; }
+    index_type ssize() const { return static_cast<index_type>(size_); }
 
     char_type * begin() { return data(); }
     const char_type * begin() const { return data(); }
@@ -126,7 +141,7 @@ public:
 
     // Ensure reserved space of the specified size, but do not perform any data initialization,
     // and keep the old data.
-    void reserve_and_keep(size_type new_capacity) {
+    void keep_reserve(size_type new_capacity) {
         // If the new capacity is less than or equal to the old size, do nothing!
         if (new_capacity > size()) {
             // Allow the new capacity is 0.
@@ -135,7 +150,7 @@ public:
     }
 
     // Allocate a new buffer of specified size and keep the old data.
-    void resize_and_keep(size_type new_size, bool fill_new = true, char_type init_val = 0) {
+    void keep_resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
         resize_impl<true>(new_size, fill_new, init_val);
     }
 
@@ -384,7 +399,7 @@ inline void swap(BasicMemoryBuffer<CharT, Traits> & lhs, BasicMemoryBuffer<CharT
 }
 //*/
 
-using MemoryBuffer = BasicMemoryBuffer<char, std::char_traits<char>>;
+using MemoryBuffer  = BasicMemoryBuffer<char, std::char_traits<char>>;
 using WMemoryBuffer = BasicMemoryBuffer<wchar_t, std::char_traits<wchar_t>>;
 
 } // namespace ziplab
@@ -392,7 +407,8 @@ using WMemoryBuffer = BasicMemoryBuffer<wchar_t, std::char_traits<wchar_t>>;
 namespace std {
 
 template <typename CharT, typename Traits = std::char_traits<CharT>>
-inline void swap(ziplab::BasicMemoryBuffer<CharT, Traits> & lhs, ziplab::BasicMemoryBuffer<CharT, Traits> & rhs) {
+inline void swap(ziplab::BasicMemoryBuffer<CharT, Traits> & lhs,
+                 ziplab::BasicMemoryBuffer<CharT, Traits> & rhs) {
     lhs.swap(rhs);
 }
 
