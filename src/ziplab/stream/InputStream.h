@@ -222,7 +222,7 @@ public:
     template <typename T>
     bool skipValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos_ >= 0);
+        assert(pos() >= 0);
         if ((pos_ + step) <= ssize()) {
             ZIPLAB_UNUSED(val);
             pos_ += step;
@@ -316,7 +316,7 @@ public:
     template <typename T>
     void usSkipValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos_ >= 0);
+        assert(pos() >= 0);
         assert((pos_ + step) <= ssize());
         ZIPLAB_UNUSED(val);
         pos_ += step;
@@ -441,7 +441,7 @@ public:
     template <typename T>
     bool peekValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos_ >= 0);
+        assert(pos() >= 0);
         if ((pos_ + step) <= ssize()) {
             val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
             return true;
@@ -534,7 +534,7 @@ public:
     template <typename T>
     void usPeekValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos >= 0);
+        assert(pos() >= 0);
         assert((pos_ + step) <= ssize());
         val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
     }
@@ -658,7 +658,7 @@ public:
     template <typename T>
     bool readValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos_ >= 0);
+        assert(pos() >= 0);
         if ((pos_ + step) <= ssize()) {
             val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
             pos_ += step;
@@ -752,7 +752,7 @@ public:
     template <typename T>
     void usReadValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos_ >= 0);
+        assert(pos() >= 0);
         assert((pos_ + step) <= ssize());
         val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
         pos_ += step;
