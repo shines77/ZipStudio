@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 
+#include <ziplab/basic/stddef.h>
 #include <ziplab/huffman/huffman.hpp>
 
 #if defined(_MSC_VER)
