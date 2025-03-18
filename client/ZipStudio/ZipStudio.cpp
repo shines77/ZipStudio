@@ -158,6 +158,9 @@ void ziplab_InputStream_test()
 
 int main(int argc, char * argv[])
 {
+    ZIPLAB_UNUSED(argc);
+    ZIPLAB_UNUSED(argv);
+
     printf("Welcome to ZipStudio Client v1.0 .\n\n");
 
     //zipstd_huffman_test();

@@ -277,6 +277,7 @@ private:
 
     inline void copy_data(const char_type * dest_data, size_type dest_size,
                           const char_type * src_data, size_type src_size) {
+        ZIPLAB_UNUSED(dest_size);
         // If the source data is not null and is not empty, then copy the data.
         if (src_data != nullptr && src_size > 0) {
             assert(dest_data != nullptr);

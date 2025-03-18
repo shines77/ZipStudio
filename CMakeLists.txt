@@ -7,6 +7,18 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+##
+## See: https://blog.csdn.net/u012487272/article/details/12882283
+##
+
+# set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+# set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+
+set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 ## Configuration value are DEBUG, RELEASE, MINSIZEREL and RELWITHDEBINFO.
 
 set(CMAKE_RELESE_POSTFIX "")
@@ -86,6 +98,11 @@ if (UNIX)
     set(EXTRA_LIBS ${EXTRA_LIBS} pthread)
 else()
     set(EXTRA_LIBS ${EXTRA_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
+if (UNIX)
+    # Adhere to GNU filesystem layout conventions
+    include(GNUInstallDirs)
 endif()
 
 # Android needs to explicitly link against libm

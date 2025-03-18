@@ -10,11 +10,16 @@
 
 #include <ziplab/huffman/huffman.hpp>
 
+#if defined(_MSC_VER)
 #pragma comment(lib, "ZipStd.lib")
 #pragma comment(lib, "ZipLab.lib")
+#endif
 
 int main(int argc, char * argv[])
 {
+    ZIPLAB_UNUSED(argc);
+    ZIPLAB_UNUSED(argv);
+
     printf("Welcome to ZipStudio Client v1.0 .\n\n");
 
     ziplab::HuffmanCompressor huffman;
