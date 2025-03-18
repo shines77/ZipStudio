@@ -2,7 +2,7 @@
 add_executable(ZipStudio)
 
 # Add client include directories
-target_include_directories(benchmark
+target_include_directories(ZipStudio
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/ZipStudio"
         "${CMAKE_CURRENT_LIST_DIR}/../src"
