@@ -35,7 +35,13 @@ public:
     using string_type = std::basic_string<char_type, traits_type>;
     using vector_type = std::vector<char_type>;
 
+#if USE_MEMORY_STORAGE
+    using memory_buffer_t = BasicMemoryBuffer< BasicMemoryStorage<char_type, traits_type> >;
+    using memory_view_t   = BasicMemoryView< BasicMemoryStorage<char_type, traits_type> >;
+#else
     using memory_buffer_t = BasicMemoryBuffer<char_type, traits_type>;
+    using memory_view_t   = BasicMemoryView<char_type, traits_type>;
+#endif
 
 private:
     const char * data_;

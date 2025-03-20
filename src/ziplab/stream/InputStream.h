@@ -28,8 +28,13 @@ public:
     using char_type     = CharT;
     using traits_type   = Traits;
 
+#if USE_MEMORY_STORAGE
+    using memory_buffer_t = BasicMemoryBuffer< BasicMemoryStorage<char_type, traits_type> >;
+    using memory_view_t   = BasicMemoryView< BasicMemoryStorage<char_type, traits_type> >;
+#else
     using memory_buffer_t = BasicMemoryBuffer<char_type, traits_type>;
     using memory_view_t   = BasicMemoryView<char_type, traits_type>;
+#endif
 
     using size_type     = typename memory_buffer_t::size_type;
     using diff_type     = typename memory_buffer_t::diff_type;
@@ -894,11 +899,23 @@ private:
     }
 };
 
+#if USE_MEMORY_STORAGE
+
+using InputStreamBuffer  = BasicInputStream< BasicMemoryBuffer< BasicMemoryStorage<char, std::char_traits<char>> >, char, std::char_traits<char> >;
+using WInputStreamBuffer = BasicInputStream< BasicMemoryBuffer< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>> >, wchar_t, std::char_traits<wchar_t> >;
+
+using InputStreamView  = BasicInputStream< BasicMemoryView< BasicMemoryStorage<char, std::char_traits<char>> >, char, std::char_traits<char>>;
+using WInputStreamView = BasicInputStream< BasicMemoryView< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>> >, wchar_t, std::char_traits<wchar_t> >;
+
+#else
+
 using InputStreamBuffer  = BasicInputStream<BasicMemoryBuffer<char, std::char_traits<char>>, char, std::char_traits<char>>;
 using WInputStreamBuffer = BasicInputStream<BasicMemoryBuffer<wchar_t, std::char_traits<wchar_t>>, wchar_t, std::char_traits<wchar_t>>;
 
 using InputStreamView  = BasicInputStream<BasicMemoryView<char, std::char_traits<char>>, char, std::char_traits<char>>;
 using WInputStreamView = BasicInputStream<BasicMemoryView<wchar_t, std::char_traits<wchar_t>>, wchar_t, std::char_traits<wchar_t>>;
+
+#endif
 
 } // namespace ziplab
 
