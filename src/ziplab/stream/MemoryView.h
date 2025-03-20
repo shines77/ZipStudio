@@ -150,7 +150,7 @@ public:
     }
 
     void clear() {
-        if (is_valid() && !is_empty()) {
+        if (this->is_valid() && !this->is_empty()) {
             clear_data();
         }
     }
@@ -167,9 +167,9 @@ public:
 
 private:
     inline void clear_data() {
-        assert(data() != nullptr);
-        assert(size() > 0);
-        std::memset((void *)data(), 0, capacity() * sizeof(char_type));
+        assert(this->data() != nullptr);
+        assert(this->size() > 0);
+        std::memset((void *)this->data(), 0, capacity() * sizeof(char_type));
     }
 
     inline void swap_data(BasicMemoryView & other) {

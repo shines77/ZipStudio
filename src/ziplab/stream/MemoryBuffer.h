@@ -160,10 +160,10 @@ public:
 #endif
 
     void destroy() {
-        if (data_ != nullptr) {
-            delete[] data_;
-            data_ = nullptr;
-            setCapacity(0);
+        if (this->data_ != nullptr) {
+            delete[] this->data_;
+            this->data_ = nullptr;
+            this->setCapacity(0);
         }
     }
 
@@ -171,7 +171,7 @@ public:
     // and don't keep the old data.
     void reserve(size_type new_capacity) {
         // If the new capacity is less than or equal to the old size, do nothing!
-        if (new_capacity > size()) {
+        if (new_capacity > this->size()) {
             // Allow the new capacity is 0.
             reserve_impl<false, false>(new_capacity);
         }
@@ -186,7 +186,7 @@ public:
     // and keep the old data.
     void keep_reserve(size_type new_capacity) {
         // If the new capacity is less than or equal to the old size, do nothing!
-        if (new_capacity > size()) {
+        if (new_capacity > this->size()) {
             // Allow the new capacity is 0.
             reserve_impl<false, true>(new_capacity);
         }
@@ -198,18 +198,18 @@ public:
     }
 
     void clear() {
-        if (is_valid() && !is_empty()) {
+        if (this->is_valid() && !this->is_empty()) {
             clear_data();
         }
     }
 
     template <size_type N>
     void copy(const char_type (&src_data)[N]) {
-        copy_impl(data(), size(), src_data, N);
+        copy_impl(this->data(), this->size(), src_data, N);
     }
 
     void copy(const char_type * src_data, size_type src_size) {
-        copy_impl(data(), size(), src_data, src_size);
+        copy_impl(this->data(), this->size(), src_data, src_size);
     }
 
     void copy(const BasicMemoryBuffer & src) {
@@ -223,12 +223,12 @@ public:
     }
 
     void copy(const vector_type & src) {
-        copy_from_container_impl(data(), size(), src);
+        copy_from_container_impl(this->data(), this->size(), src);
     }
 
     template <typename Container>
     void copy_from_container(const Container & src) {
-        copy_from_container_impl(data(), size(), src);
+        copy_from_container_impl(this->data(), this->size(), src);
     }
 
     void swap(BasicMemoryBuffer & other) {
@@ -251,28 +251,28 @@ private:
     }
 
     inline void deallocate() {
-        assert(data_ != nullptr);
-        delete[] data_;
+        assert(this->data_ != nullptr);
+        delete[] this->data_;
     }
 
     template <bool isInitialize, bool needReserve>
     inline void reserve_impl(size_type new_capacity) {
         // Allow the new capacity is 0.
         const char_type * new_data = allocate(new_capacity);
-        size_type copy_size = (std::min)(new_capacity, size());
+        size_type copy_size = (std::min)(new_capacity, this->size());
         // If necessary, copy the old data to new data.
-        if (!isInitialize && is_valid()) {
+        if (!isInitialize && this->is_valid()) {
             if (needReserve && (copy_size > 0)) {
                 assert(new_data != nullptr);
-                std::memcpy((void *)new_data, (const void *)data(), copy_size * sizeof(char_type));
+                std::memcpy((void *)new_data, (const void *)this->data(), copy_size * sizeof(char_type));
             }
             deallocate();
         }
-        data_ = new_data;
+        this->data_ = new_data;
 #if USE_MEMORY_STORAGE
-        setCapacity(new_capacity);
+        this->setCapacity(new_capacity);
 #else
-        size_ = new_capacity;
+        this->size_ = new_capacity;
 #endif
     }
 
@@ -285,14 +285,14 @@ private:
             const char_type * new_data = allocate(new_size);
             size_type copy_size;
             if (needReserve)
-                copy_size = (std::min)(new_size, size());
+                copy_size = (std::min)(new_size, this->size());
             else
                 copy_size = 0;
             // If necessary, copy the old data to new data.
-            if (is_valid()) {
+            if (this->is_valid()) {
                 if (needReserve && (copy_size > 0)) {
                     assert(new_data != nullptr);
-                    std::memcpy((void *)new_data, (const void *)data(), copy_size * sizeof(char_type));
+                    std::memcpy((void *)new_data, (const void *)this->data(), copy_size * sizeof(char_type));
                 }
                 deallocate();
             }
@@ -303,27 +303,27 @@ private:
                 assert(remain_size > 0);
                 std::memset((void *)(new_data + copy_size), (int)init_val, remain_size * sizeof(char_type));
             }
-            data_ = new_data;
+            this->data_ = new_data;
 #if USE_MEMORY_STORAGE
-            setCapacity(new_size);
+            this->setCapacity(new_size);
 #else
-            size_ = new_size;
+            this->size_ = new_size;
 #endif
         } else {
             // If necessary, fill the remaining part with the specified default value.
-            if (fill_new && (is_valid() && !is_empty())) {
-                assert(data() != nullptr);
-                assert(size() > 0);
-                assert(new_size == size());
-                std::memset((void *)data(), (int)init_val, size() * sizeof(char_type));
+            if (fill_new && (this->is_valid() && !this->is_empty())) {
+                assert(this->data() != nullptr);
+                assert(this->size() > 0);
+                assert(new_size == this->size());
+                std::memset((void *)this->data(), (int)init_val, this->size() * sizeof(char_type));
             }
         }
     }
 
     inline void clear_data() {
-        assert(data() != nullptr);
-        assert(size() > 0);
-        std::memset((void *)data(), 0, size());
+        assert(this->data() != nullptr);
+        assert(this->size() > 0);
+        std::memset((void *)this->data(), 0, this->size() * sizeof(char_type));
     }
 
     inline void copy_data(const char_type * dest_data, size_type dest_size,
@@ -341,35 +341,35 @@ private:
     template <typename Container>
     inline void copy_data_from_container(const Container & src) {
         using const_iterator = typename Container::const_iterator;
-        assert(data() != nullptr);
-        assert(size() == src.size());
-        const char_type * dest = data();
+        assert(this->data() != nullptr);
+        assert(this->size() == src.size());
+        const char_type * dest = this->data();
         size_type count = 0;
         for (const_iterator iter = src.cbegin(); iter != src.cend(); ++iter) {
             *dest = *iter;
             dest++;
             count++;
         }
-        assert(count == size());
+        assert(count == this->size());
     }
 
     template <bool isInitialize>
     inline void assgin_and_copy_data(const char_type * src_data, size_type src_size) {
         if (isInitialize) {
             // It is necessary to ensure that the data is empty.
-            assert(data() == nullptr);
-            assert(size() == 0);
+            assert(this->data() == nullptr);
+            assert(this->size() == 0);
         }
         // If the source data is not null and is not empty, then copy the data.
         if (src_data != nullptr) {
             // Allow the new size is 0.
             size_type new_size = src_size;
             const char_type * new_data = allocate(new_size);
-            data_ = new_data;
+            this->data_ = new_data;
 #if USE_MEMORY_STORAGE
-            setCapacity(new_size);
+            this->setCapacity(new_size);
 #else
-            size_ = new_size;
+            this->size_ = new_size;
 #endif
 
             if (src_size > 0) {
@@ -377,11 +377,11 @@ private:
             }
         } else if (!isInitialize) {
             // Reset the status when it's not initializing.
-            data_ = nullptr;
+            this->data_ = nullptr;
 #if USE_MEMORY_STORAGE
-            setCapacity(0);
+            this->setCapacity(0);
 #else
-            size_ = 0;
+            this->size_ = 0;
 #endif
         }
     }
@@ -390,18 +390,18 @@ private:
     inline void assgin_and_copy_data_from_container(const Container & src) {
         if (isInitialize) {
             // It is necessary to ensure that the data is empty.
-            assert(data() == nullptr);
-            assert(size() == 0);
+            assert(this->data() == nullptr);
+            assert(this->size() == 0);
         }
 
         // Allow the new size is 0.
         size_type new_size = src.size();
         const char_type * new_data = allocate(new_size);
-        data_ = new_data;
+        this->data_ = new_data;
 #if USE_MEMORY_STORAGE
-        setCapacity(new_size);
+        this->setCapacity(new_size);
 #else
-        size_ = new_size;
+        this->size_ = new_size;
 #endif
 
         // If the source vector is not empty, then copy the data.
@@ -414,14 +414,14 @@ private:
         if (dest_size != src_size) {
             // If the source size is not equal to the data size, destroy and reallocate a new buffer,
             // then copy the data from source data.
-            if (is_valid()) {
+            if (this->is_valid()) {
                 deallocate();
             }
             assgin_and_copy_data<false>(src_data, src_size);
         } else {
             // If the source size is equal to the data size,
             // copy the data from source data when the destination size is greater than 0.
-            if (is_valid()) {
+            if (this->is_valid()) {
                 // Whether the destination size is empty, check it in copy_data() function.
                 copy_data(dest_data, dest_size, src_data, src_size);
             }
@@ -434,14 +434,14 @@ private:
         if (dest_size != src.size()) {
             // If the source size is not equal to the data size, destroy and reallocate a new buffer,
             // then copy the data from source data.
-            if (is_valid()) {
+            if (this->is_valid()) {
                 deallocate();
             }
             assgin_and_copy_data_from_container<false>(src);
         } else {
             // If the source size is equal to the data size,
             // copy the data from source data when the destination size is greater than 0.
-            if (is_valid()) {
+            if (this->is_valid()) {
                 // Whether the destination size is empty, check it in copy_data() function.
                 copy_data_from_container(src);
             }
