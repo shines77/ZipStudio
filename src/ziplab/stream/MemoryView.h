@@ -169,7 +169,7 @@ private:
     inline void clear_data() {
         assert(this->data() != nullptr);
         assert(this->size() > 0);
-        std::memset((void *)this->data(), 0, capacity() * sizeof(char_type));
+        std::memset((void *)this->data(), 0, this->capacity() * sizeof(char_type));
     }
 
     inline void swap_data(BasicMemoryView & other) {

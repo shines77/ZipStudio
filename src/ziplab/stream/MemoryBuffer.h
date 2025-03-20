@@ -280,7 +280,7 @@ private:
     template <bool needReserve>
     void resize_impl(size_type new_size, bool fill_new = true, char_type init_val = 0) {
         // If the new size is equal to the old size, do nothing!
-        if (new_size != size()) {
+        if (new_size != this->size()) {
             // Allow the new size is 0.
             const char_type * new_data = allocate(new_size);
             size_type copy_size;
