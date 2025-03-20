@@ -108,7 +108,7 @@ public:
     }
 
     const super_type & storage() const {
-        return *static_cast<super_type *>(const_cast<this_type *>(this);
+        return *static_cast<super_type *>(const_cast<this_type *>(this));
     }
 #endif
 
