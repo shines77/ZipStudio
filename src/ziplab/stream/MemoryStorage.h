@@ -46,7 +46,7 @@ public:
         : data_(data), capacity_(capacity) {
     }
     BasicMemoryStorage(const BasicMemoryStorage & src) :
-        data_(src.data()), size_(src.capacity()) {
+        data_(src.data()), capacity_(src.capacity()) {
     }
     ~BasicMemoryStorage() {
     }
