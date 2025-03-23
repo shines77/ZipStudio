@@ -17,6 +17,9 @@
     <Filter Include="src\stream">
       <UniqueIdentifier>{7a315474-7d2b-4578-88fd-7951ae3963e1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\lz77">
+      <UniqueIdentifier>{a9fe3e8a-97c4-48d2-b8cf-93153ec3a40c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\ziplab\huffman\huffman.cpp">
@@ -98,6 +101,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\ziplab\stream\MemoryStorage.h">
       <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\lz77\lzss.hpp">
+      <Filter>src\lz77</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\lz77\lz77.hpp">
+      <Filter>src\lz77</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

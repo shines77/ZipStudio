@@ -39,10 +39,10 @@ public:
     using CodeMap = std::unordered_map<HuffmanByte, std::string>;
 
     // Compress data
-    std::vector<HuffmanByte> compress(const std::vector<HuffmanByte>& data);
+    std::vector<HuffmanByte> compress(const std::vector<HuffmanByte> & data);
 
     // Decompress data
-    std::vector<HuffmanByte> decompress(const std::vector<HuffmanByte>& compressed_data);
+    std::vector<HuffmanByte> decompress(const std::vector<HuffmanByte> & compressed_data);
 
     // Compress file
     void compressFile(const std::string & inputFile, const std::string & outputFile);
