@@ -8,9 +8,6 @@
 #include <fstream>
 #include <sstream>
 
-#include <zipstd/huffman/huffman.hpp>
-#include <ziplab/huffman/huffman.hpp>
-
 #include <ziplab/stream/MemoryBuffer.h>
 #include <ziplab/stream/MemoryView.h>
 
@@ -22,26 +19,15 @@
 #include <ziplab/stream/FileReader.h>
 #include <ziplab/stream/FileWriter.h>
 
+#include <zipstd/huffman/huffman.hpp>
+#include <ziplab/huffman/huffman.hpp>
+
+#include <ziplab/lz77/lzss.hpp>
+
 #if defined(_MSC_VER)
 #pragma comment(lib, "ZipStd.lib")
 #pragma comment(lib, "ZipLab.lib")
 #endif
-
-void zipstd_huffman_test()
-{
-    zipstd::HuffmanCompressor huffman;
-
-    huffman.compressFile("input.txt", "compressed_std.bin");
-    huffman.decompressFile("compressed_std.bin", "decompressed_std.txt");
-}
-
-void ziplab_huffman_test()
-{
-    ziplab::HuffmanCompressor huffman;
-
-    huffman.compressFile("input.txt", "compressed_lab.bin");
-    huffman.decompressFile("compressed_lab.bin", "decompressed_lab.txt");
-}
 
 void ziplab_MemoryBuffer_test()
 {
@@ -153,6 +139,41 @@ void ziplab_InputStream_test()
         printf("b = %d, sbyte = %d, byte = %d, i32 = 0x%08X, u32 = 0x%08X, vptr = %p\n\n",
             (int)b, (int)sbyte, (int)byte, (int)i32, u32, vptr);
 #endif
+    }
+}
+
+void zipstd_huffman_test()
+{
+    zipstd::HuffmanCompressor huffman;
+
+    huffman.compressFile("input.txt", "compressed_std.bin");
+    huffman.decompressFile("compressed_std.bin", "decompressed_std.txt");
+}
+
+void ziplab_huffman_test()
+{
+    ziplab::HuffmanCompressor huffman;
+
+    huffman.compressFile("input.txt", "compressed_lab.bin");
+    huffman.decompressFile("compressed_lab.bin", "decompressed_lab.txt");
+}
+
+void ziplab_lzss_test()
+{
+    std::string input_data1 = "This is a simple example of LZ77 compression algorithm.";
+    std::string input_data2 = "ABABABAABABABACCDABABABABA";
+
+    std::string & input_data = input_data2;
+
+    ziplab::LZSSCompressor<12, 4> lzss;
+
+    std::string compressed_data = lzss.compress(input_data);
+    std::string decompressed_data = lzss.decompress(compressed_data);
+
+    if (decompressed_data == input_data) {
+        printf("ziplab::LZSSCompressor::decompress() is PASSED.\n\n");
+    } else {
+        printf("ziplab::LZSSCompressor::decompress() is FAILED.\n\n");
     }
 }
 

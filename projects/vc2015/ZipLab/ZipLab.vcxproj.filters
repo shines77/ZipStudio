@@ -108,5 +108,8 @@
     <ClInclude Include="..\..\..\src\ziplab\lz77\lz77.hpp">
       <Filter>src\lz77</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\lz77\lzDictHashmap.hpp">
+      <Filter>src\lz77</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
