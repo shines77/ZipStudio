@@ -39,11 +39,11 @@ public:
     static constexpr size_type kWindowMask = kWindowSize - 1;
     static constexpr size_type kLengthMask = kLookAheadSize - 1;
 
-    static constexpr size_type kMinLookAhead = 3;
-    static constexpr size_type kMaxLookAhead = kMinLookAhead + kLookAheadSize - 1;
+    static constexpr size_type kMinMatchLength = 3;
+    static constexpr size_type kMaxLookAheadSize = kMinMatchLength + kLookAheadSize - 1;
 
-    static constexpr size_type kFirstHashKeyLen = 3;
-    static constexpr size_type kSecondHashKeyLen = 6;
+    static constexpr size_type kL1HashKeyLen = 3;
+    static constexpr size_type kL2HashKeyLen = 6;
 
     static constexpr size_type npos = static_cast<size_type>(-1);
 
@@ -60,11 +60,11 @@ public:
     }
 
     // Compress data
-    std::string compress(const std::string & input) {
+    std::string compress(const std::string & input_data) {
         static constexpr size_type kWordLen = sizeof(size_type);
         static constexpr size_type kMaxFlag = static_cast<size_type>(1) << (kWordLen - 1);
 
-        size_type data_len = input.size();
+        size_type data_len = input_data.size();
         std::vector<size_type> flag_array;
 
         LZDictHashmap<offset_type> firstHashmap(kWindowSize * 2);
@@ -82,11 +82,11 @@ public:
             // Calculate the boundary of the sliding window.
             size_type window_start = (pos > kWindowSize) ? (pos - kWindowSize) : 0;
             size_type window_size = (std::min)(kWindowSize, pos);
-            size_type lookahead_size = (std::min)(kLookAheadSize, data_len - pos);
+            size_type lookahead_size = (std::min)(kMaxLookAheadSize, data_len - pos);
             size_type lookahead_last = (std::min)(pos + kLookAheadSize, data_len);
 
-            const char * window = input.data() + window_start;
-            const char * lookahead = input.data() + pos;
+            const char * window = input_data.data() + window_start;
+            const char * lookahead = input_data.data() + pos;
 
             size_type match_pos = npos;
             size_type match_len = find_match(window, lookahead, window_size, lookahead_size);
@@ -128,6 +128,38 @@ public:
     }
 
 private:
+    size_type plain_find_match(const char * window, const char * lookahead,
+                               size_type window_size, size_type lookahead_size) {
+        assert(window != nullptr);
+        assert(lookahead != nullptr);
+        assert(window_size > 0);
+        assert(lookahead_size > 0);
+
+        size_type best_match_len = kMinMatchLength - 1;
+        size_type best_offset = 0;
+
+        for (size_type pos = 0; pos < window_size; pos++) {
+            const char * window_start = window + pos;
+
+            size_type match_len = 0;
+            do  {
+                if (window_start[match_len] == lookahead[match_len])
+                    match_len++;
+            } while (match_len < lookahead_size);
+
+            if (match_len > best_match_len) {
+                best_match_len = match_len;
+                best_offset = pos;
+
+                // If the matching length has reached the maximum lookahead size, return directly.
+                if (match_len >= lookahead_size)
+                    break;
+            }
+        }
+
+        return ((best_match_len >= kMinMatchLength) ? best_match_len : 0);
+    }
+
     size_type find_match(const char * window, const char * lookahead,
                          size_type window_size, size_type lookahead_size) {
         return 0;
