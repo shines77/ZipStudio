@@ -35,6 +35,9 @@ public:
     static constexpr size_type kTotalWords = (Bits != 0) ? kOrigTotalWords : 1;
     static constexpr size_type kTotalBytes = (Bits != 0) ? kOrigTotalBytes : 1;
 
+    static_assert((kTotalWords > 0), "kTotalWords must be greater than 0");
+    static_assert((kTotalBytes > 0), "kTotalBytes must be greater than 0")
+
     static constexpr ssize_type ksTotalWords = static_cast<ssize_type>(kTotalWords);
 
     // Full words and rest bits
@@ -177,10 +180,11 @@ public:
             value_type bit_rshift = kBitsPerWord - bit_shift;
             for (ssize_type index = kTotalWords - 1; index >= 0; index--) {
                 array_[index] = static_cast<value_type>((array_[index] << bit_shift) | (array_[index - 1] >> bit_rshift));
+            }
             array_[0] <<= bit_shift;
         }
         trim();
-        return (*this);
+        return *this;
     }
 
 	bitset & operator >>= (size_type pos) noexcept {
@@ -204,7 +208,7 @@ public:
             }
             array_[kFullWords] >>= bit_shift;
         }
-		return (*this);
+		return *this;
     }
 
     const char * data() const noexcept {
