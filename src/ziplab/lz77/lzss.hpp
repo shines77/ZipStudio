@@ -93,7 +93,7 @@ private:
 
     union PackedPair {
         std::uint16_t value;
-        struct {
+        struct UInt8 {
             std::uint8_t first;
             std::uint8_t second;
         };
@@ -195,6 +195,8 @@ public:
     // Decompress data
     std::string plain_decompress(const std::string & compressed_data) {
         std::string decompressed;
+
+        ZIPLAB_UNUSED(compressed_data);
 
         return decompressed;
     }

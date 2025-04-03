@@ -5,16 +5,11 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <bitset>
-#include <vector>
 #include <string>
-#include <queue>
-#include <unordered_map>
 #include <memory>
-#include <stdexcept>
-
-#include "ziplab/lz77/lz77.hpp"
-#include "ziplab/lz77/lzDictHashmap.hpp"
+#include <climits>      // For CHAR_BIT
+#include <algorithm>    // For std::min(), std::max()
+#include <stdexcept>    // For std::exception
 
 namespace jstd {
 
@@ -28,8 +23,6 @@ public:
     using value_type = typename std::conditional<(Bits <= 32), std::uint32_t, std::uint64_t>::type;
     using size_type = std::size_t;
     using ssize_type = std::ptrdiff_t;
-
-    static_assert((Bits != 0), "<Bits> don't allow less than 1.");
 
     // The number of bits per word
     static constexpr size_type kBitsPerWord = sizeof(value_type) * CHAR_BIT;
