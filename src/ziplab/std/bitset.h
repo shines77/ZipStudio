@@ -36,7 +36,7 @@ public:
     static constexpr size_type kTotalBytes = (Bits != 0) ? kOrigTotalBytes : 1;
 
     static_assert((kTotalWords > 0), "kTotalWords must be greater than 0");
-    static_assert((kTotalBytes > 0), "kTotalBytes must be greater than 0")
+    static_assert((kTotalBytes > 0), "kTotalBytes must be greater than 0");
 
     static constexpr ssize_type ksTotalWords = static_cast<ssize_type>(kTotalWords);
 
@@ -353,12 +353,12 @@ public:
     }
 
     bitset operator << (size_type pos) const noexcept {
-        // Return bitset shifted left by _Pos
+        // Return bitset shifted left by pos
         return (bitset(*this) <<= pos);
     }
 
-    bitset operator >> (size_type _Pos) const noexcept {
-        // Return bitset shifted right by _Pos
+    bitset operator >> (size_type pos) const noexcept {
+        // Return bitset shifted right by pos
         return (bitset(*this) >>= pos);
     }
 
