@@ -130,6 +130,11 @@ public:
 		return true;
     }
 
+	bool operator != (const bitset & right) const noexcept {
+        // Test for bitset not equality
+		return !(*this == right);
+    }
+
 	bitset & operator &= (const bitset & right) noexcept {
         // And in right
 		for (ssize_type pos = 0; pos < ksTotalWords; pos++) {
@@ -152,6 +157,54 @@ public:
 			array_[pos] ^= right._get_word(pos);
         }
 		return *this;
+    }
+
+	bitset & operator <<= (size_type pos) noexcept {
+        // Shift left by pos
+        assert(pos < Bits);
+        ssize_type word_shift = get_index(pos);
+        if (word_shift != 0) {
+            // Shift left by words
+            for (ssize_type index = kTotalWords - 1; index >= 0; index--) {
+                array_[index] = (index >= word_shift) ?
+                    array_[index - word_shift] : static_cast<value_type>(0);
+            }
+        }
+
+        value_type bit_shift = get_shift(pos);
+        if (bit_shift != 0) {
+            // 0 < bit_shift < kBitsPerWord, shift by bits
+            value_type bit_rshift = kBitsPerWord - bit_shift;
+            for (ssize_type index = kTotalWords - 1; index >= 0; index--) {
+                array_[index] = static_cast<value_type>((array_[index] << bit_shift) | (array_[index - 1] >> bit_rshift));
+            array_[0] <<= bit_shift;
+        }
+        trim();
+        return (*this);
+    }
+
+	bitset & operator >>= (size_type pos) noexcept {
+        // Shift right by pos, first by words then by bits
+        assert(pos < Bits);
+        ssize_type word_shift = get_index(pos);
+        if (word_shift != 0) {
+            // Shift right by words
+            for (ssize_type index = 0; index < kTotalWords; index++) {
+                array_[index] = ((kTotalWords - index) >= word_shift) ?
+                    array_[index + word_shift] : static_cast<value_type>(0);
+            }
+        }
+
+        value_type bit_shift = get_shift(pos);
+        if (bit_shift != 0) {
+            // 0 < bit_shift < kBitsPerWord, shift by bits
+            value_type bit_lshift = kBitsPerWord - bit_shift;
+            for (ssize_type index = 0; index < (kTotalWords - 1); index++) {
+                array_[index] = static_cast<value_type>((array_[index] >> bit_shift) | (array_[index + 1] << bit_lshift));
+            }
+            array_[kFullWords] >>= bit_shift;
+        }
+		return (*this);
     }
 
     const char * data() const noexcept {
@@ -200,6 +253,7 @@ public:
     }
 
     value_type get_word(ssize_type index) {
+        // Get word at pos
 		if (index >= ksTotalWords) {
             // index out of range
 			throw_index_out_of_range();
@@ -294,11 +348,23 @@ public:
 		return *this;
     }
 
+    bitset operator << (size_type pos) const noexcept {
+        // Return bitset shifted left by _Pos
+        return (bitset(*this) <<= pos);
+    }
+
+    bitset operator >> (size_type _Pos) const noexcept {
+        // Return bitset shifted right by _Pos
+        return (bitset(*this) >>= pos);
+    }
+
 private:
+    // pos / kBitsPerWord
     inline ssize_type get_index(size_type pos) const {
         return static_cast<ssize_type>(pos / kBitsPerWord);
     }
 
+    // pos % kBitsPerWord
     inline value_type get_shift(size_type pos) const {
         return static_cast<value_type>(pos % kBitsPerWord);
     }
@@ -308,8 +374,15 @@ private:
         return array_[index];
     }
 
-    void validate() {
-        //
+	constexpr bool subscript(size_type pos) const {
+        // Subscript nonmutable sequence
+        ssize_type index = get_index(pos);
+        value_type shift = get_shift(pos);
+		return ((array_[index] & (static_cast<value_type>(1) << shift)) != 0);
+    }
+
+    void validate(size_type pos) {
+        assert(pos < kTotalWords);
     }
 
     void trim() {

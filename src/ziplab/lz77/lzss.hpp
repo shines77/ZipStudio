@@ -93,7 +93,7 @@ private:
 
     union PackedPair {
         std::uint16_t value;
-        struct UInt8 {
+        struct {
             std::uint8_t first;
             std::uint8_t second;
         };
@@ -168,7 +168,7 @@ public:
                     size_type real_match_len = match_info.match_len - kMinMatchLength;
                     assert(real_match_len < kMaxMatchLength);
                     assert(match_info.match_pos < kWindowSize);
-                    PackedPair packedPair = static_cast<std::uint16_t>((real_match_len << kWindowBits) | match_info.match_pos);
+                    PackedPair packedPair(static_cast<std::uint16_t>((real_match_len << kWindowBits) | match_info.match_pos));
                     block_data.push_back(packedPair.first);
                     block_data.push_back(packedPair.second);
 
