@@ -167,8 +167,8 @@ void ziplab_lzss_test()
 
     ziplab::LZSSCompressor<12, 4> lzss;
 
-    std::string compressed_data = lzss.compress(input_data);
-    std::string decompressed_data = lzss.decompress(compressed_data);
+    std::string compressed_data = lzss.plain_compress(input_data);
+    std::string decompressed_data = lzss.plain_decompress(compressed_data);
 
     if (decompressed_data == input_data) {
         printf("ziplab::LZSSCompressor::decompress() is PASSED.\n\n");
@@ -186,6 +186,8 @@ int main(int argc, char * argv[])
 
     //zipstd_huffman_test();
     //ziplab_huffman_test();
+
+    ziplab_lzss_test();
 
     ziplab_MemoryBuffer_test();
     ziplab_MemoryView_test();

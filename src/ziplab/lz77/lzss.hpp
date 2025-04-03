@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <bitset>
 #include <vector>
 #include <string>
 #include <queue>
@@ -12,6 +13,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "ziplab/std/bitset.h"
 #include "ziplab/lz77/lz77.hpp"
 #include "ziplab/lz77/lzDictHashmap.hpp"
 
@@ -21,34 +23,93 @@ template <std::size_t WindowBits, std::size_t LookAheadBits>
 class LZSSCompressor {
 public:
     using size_type = std::size_t;
+    using ssize_type = std::intptr_t;
     using offset_type = std::uint16_t;
 
-    static constexpr size_type kWindowSize = static_cast<size_type>(1 << WindowBits);
-    static constexpr size_type kLookAheadSize = static_cast<size_type>(1 << LookAheadBits);
+    static constexpr size_type kWindowBits = WindowBits;
+    static constexpr size_type kLookAheadBits = LookAheadBits;
+
+    static constexpr size_type kWindowSize = static_cast<size_type>(1 << kWindowBits);
+    static constexpr size_type kLookAheadSize = static_cast<size_type>(1 << kLookAheadBits);
 
     // WindowBits = [4, 16], WindowSize = [16, 65536]
     static_assert((kWindowSize >= 16), "The kWindowSize must be greater than or equal to or 16.");
     static_assert((kWindowSize <= 65536), "The kWindowSize must be less than or equal to 65536.");
 
     // WindowBits > LookAheadBits
-    static_assert((WindowBits > LookAheadBits), "The WindowBits must be greater than LookAheadBits.");
+    static_assert((kWindowBits > kLookAheadBits), "The WindowBits must be greater than LookAheadBits.");
 
     // LookAheadBits >= 2, LookAheadSize >= 4
-    static_assert((LookAheadBits > 1), "The LookAheadBits must be greater than 1.");
+    static_assert((kLookAheadBits > 1), "The LookAheadBits must be greater than 1.");
 
     static constexpr size_type kWindowMask = kWindowSize - 1;
     static constexpr size_type kLengthMask = kLookAheadSize - 1;
 
     static constexpr size_type kMinMatchLength = 3;
-    static constexpr size_type kMaxLookAheadSize = kMinMatchLength + kLookAheadSize - 1;
+    static constexpr size_type kMaxMatchLength = kLookAheadSize - 1;
+    static constexpr size_type kMaxLookAheadSize = kMinMatchLength + kMaxMatchLength;
 
     static constexpr size_type kL1HashKeyLen = 3;
     static constexpr size_type kL2HashKeyLen = 6;
 
+    //
+    // The total data size of block, to adaptive the size of L1 or L2 cache.
+    // We make the total data size of block less than or equal to 16 KB or 32 KB.
+    //
+    // The data used includes:
+    //
+    // the window chars = [kWindowSize], maybe is 4096 bytes,
+    // the hashmap size = [kWindowSize * 2 * sizeof(uint16_t)], maybe is 16384 bytes,
+    // the data of block, associated with flag bits, maybe is <= 16384 bytes,
+    // the flags of block, = [kBlockDataSize / 8], maybe is 2048 bytes.
+    //
+    // Total size <= 4096 + 16384 + 16384 + 2048 <= 38 KB, (when kBlockDataSize = 16 KB)
+    // Total size <= 4096 + 16384 + 32768 + 4096 <= 56 KB, (when kBlockDataSize = 32 KB)
+    //
+    static constexpr size_type kBlockDataSize = 16 * 1024;
+
+    static_assert(((kBlockDataSize & (kBlockDataSize - 1)) == 0),
+                  "The kBlockDataSize must be is a power of 2.");
+
+    // A flag is followed by 1 or 2 bytes of data.
+    static constexpr size_type kBlockFlagSize = kBlockDataSize / 2;
+
     static constexpr size_type npos = static_cast<size_type>(-1);
 
 private:
-    //
+    struct MatchInfo {
+        size_type match_len;
+        size_type match_pos;
+
+        MatchInfo() : match_len(0), match_pos(npos) {}
+
+        MatchInfo(size_type match_len, size_type match_pos)
+            : match_len(match_len), match_pos(match_pos) {}
+
+        MatchInfo(const MatchInfo & src)
+            : match_len(src.match_len), match_pos(src.match_pos) {
+        }
+    };
+
+    union PackedPair {
+        std::uint16_t value;
+        struct {
+            std::uint8_t first;
+            std::uint8_t second;
+        };
+
+        PackedPair() : value(0) {}
+        PackedPair(std::uint16_t value) : value(value) {}
+        PackedPair(std::uint8_t first, std::uint8_t second)
+            : first(first), second(second) {}
+
+        PackedPair(const PackedPair & src) : value(src.value) {}
+
+        PackedPair & operator = (std::uint16_t rhs) {
+            value = rhs;
+            return *this;
+        }
+    };
 
 public:
     LZSSCompressor() {
@@ -60,58 +121,79 @@ public:
     }
 
     // Compress data
-    std::string compress(const std::string & input_data) {
+    std::string plain_compress(const std::string & input_data) {
         static constexpr size_type kWordLen = sizeof(size_type);
         static constexpr size_type kMaxFlag = static_cast<size_type>(1) << (kWordLen - 1);
 
-        size_type data_len = input_data.size();
-        std::vector<size_type> flag_array;
-
-        LZDictHashmap<offset_type> firstHashmap(kWindowSize * 2);
-        LZDictHashmap<offset_type> secondHashmap(kWindowSize * 2);
-
-        size_type flag_len = (data_len + kWordLen - 1) /  kWordLen;
-        flag_array.reserve(flag_len);
-
         std::string compressed;
+        size_type data_len = input_data.size();
+        if (ziplab_unlikely(data_len == 0)) {
+            return compressed;
+        }
 
-        size_type flag_bits = 0;
-        size_type flag_bit = 1;
+        LZDictHashmap<offset_type, WindowBits> L1_hashmap;
+
+        jstd::bitset<kBlockFlagSize> flag_bits;
+        std::string block_data;
+
+        //flag_bits.reset();       
+        block_data.reserve(kBlockDataSize);
+
+        static constexpr size_type kBlockFlagLen = (kBlockFlagSize + kWordLen - 1) /  kWordLen;
+
         size_type pos = 0;
-        while (pos < data_len) {
-            // Calculate the boundary of the sliding window.
-            size_type window_start = (pos > kWindowSize) ? (pos - kWindowSize) : 0;
-            size_type window_size = (std::min)(kWindowSize, pos);
-            size_type lookahead_size = (std::min)(kMaxLookAheadSize, data_len - pos);
-            size_type lookahead_last = (std::min)(pos + kLookAheadSize, data_len);
+        assert(data_len > 0);
+        do {
+            size_type remain_size = data_len - pos;
+            size_type block_capacity = (remain_size > kBlockDataSize) ? kBlockDataSize : remain_size;
+            size_type block_pos = pos;
+            size_type block_end = pos + block_capacity;
+            while (block_pos < block_end) {
+                // Calculate the boundary of the sliding window.
+                ssize_type window_first = block_pos - kWindowSize;  // It's can be negative
+                size_type window_start = (window_first >= 0) ? window_first : 0;
+                size_type window_size = (std::min)(kWindowSize, block_pos);
+                size_type lookahead_size = (std::min)(kMaxLookAheadSize, data_len - block_pos);
+                size_type lookahead_last = (std::min)(pos + kMaxLookAheadSize, data_len);
 
-            const char * window = input_data.data() + window_start;
-            const char * lookahead = input_data.data() + pos;
+                const char * window = input_data.data() + window_start;
+                const char * lookahead = input_data.data() + block_pos;
 
-            size_type match_pos = npos;
-            size_type match_len = find_match(window, lookahead, window_size, lookahead_size);
+                MatchInfo match_info = plain_find_match(window, lookahead, window_size, lookahead_size);
 
-            if (match_pos != npos) {
-                flag_bits |= flag_bit;
+                if (ziplab_likely(match_info.match_len < kMinMatchLength)) {
+                    block_data.push_back(input_data[block_pos++]);
+                    block_data.push_back(input_data[block_pos++]);
+                } else {
+                    size_type real_match_len = match_info.match_len - kMinMatchLength;
+                    assert(real_match_len < kMaxMatchLength);
+                    assert(match_info.match_pos < kWindowSize);
+                    PackedPair packedPair = static_cast<std::uint16_t>((real_match_len << kWindowBits) | match_info.match_pos);
+                    block_data.push_back(packedPair.first);
+                    block_data.push_back(packedPair.second);
+
+                    assert(match_info.match_pos != npos);
+                    flag_bits.set(block_pos);
+
+                    block_pos += match_info.match_len;
+                }
             }
-            if (flag_bit != kMaxFlag) {
-                flag_bit <<= 1;
-            } else {
-                flag_array.push_back(flag_bits);
-                flag_bit = 1;
-            }
-            
-        }
 
-        if (flag_bit != 1) {
-            flag_array.push_back(flag_bits);
-        }
+            // Output flag bits and the data buffer
+            append_flag_bits(compressed, flag_bits, block_capacity);
+            compressed.append(block_data);
+
+            flag_bits.reset();
+            block_data.clear();
+
+            pos = block_end;
+        } while (pos < data_len);
 
         return compressed;
     }
 
     // Decompress data
-    std::string decompress(const std::string & compressed_data) {
+    std::string plain_decompress(const std::string & compressed_data) {
         std::string decompressed;
 
         return decompressed;
@@ -128,15 +210,35 @@ public:
     }
 
 private:
-    size_type plain_find_match(const char * window, const char * lookahead,
+    inline size_type append_flag_bits(std::string & compressed,
+                                      const jstd::bitset<kBlockFlagSize> & flag_bits,
+                                      size_type flag_capacity) {
+        assert(flag_capacity <= kBlockFlagSize);
+        size_type num_bytes = (flag_capacity + (CHAR_BIT - 1)) / CHAR_BIT;
+
+        // Allocate the size of data to be added in advance
+        compressed.reserve(compressed.size() + num_bytes);
+
+        assert(num_bytes == flag_bits.bytes());
+        compressed.append(flag_bits.data(), flag_bits.bytes());
+
+        return num_bytes;
+    }
+
+    MatchInfo plain_find_match(const char * window, const char * lookahead,
                                size_type window_size, size_type lookahead_size) {
         assert(window != nullptr);
         assert(lookahead != nullptr);
+
+        if (window_size < (kMinMatchLength - 1)) {
+            return { 0, 0 };
+        }
+
         assert(window_size > 0);
         assert(lookahead_size > 0);
 
         size_type best_match_len = kMinMatchLength - 1;
-        size_type best_offset = 0;
+        size_type best_offset = npos;
 
         for (size_type pos = 0; pos < window_size; pos++) {
             const char * window_start = window + pos;
@@ -145,7 +247,9 @@ private:
             do  {
                 if (window_start[match_len] == lookahead[match_len])
                     match_len++;
-            } while (match_len < lookahead_size);
+                else
+                    break;
+            } while (match_len < lookahead_size && match_len < window_size);
 
             if (match_len > best_match_len) {
                 best_match_len = match_len;
@@ -157,12 +261,15 @@ private:
             }
         }
 
-        return ((best_match_len >= kMinMatchLength) ? best_match_len : 0);
+        return { best_match_len, best_offset };
     }
 
-    size_type find_match(const char * window, const char * lookahead,
+    MatchInfo find_match(const char * window, const char * lookahead,
                          size_type window_size, size_type lookahead_size) {
-        return 0;
+        size_type best_match_len = kMinMatchLength - 1;
+        size_type best_offset = npos;
+
+        return { best_match_len, best_offset };
     }
 };
 

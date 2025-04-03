@@ -16,29 +16,30 @@
 
 namespace ziplab {
 
-template <typename T>
+template <typename T, std::size_t SizeBits>
 class LZDictHashmap {
 public:
     using offset_type = T;
     using size_type = std::size_t;
 
+    static constexpr size_type kCapacity = static_cast<size_type>(1) << SizeBits;
+    static constexpr size_type kOffsetMask = static_cast<size_type>(kCapacity - 1);
+
+    static_assert((SizeBits >= 1), "LZDictHashmap<T, N>'s SizeBits must be greater than or equal to 1.");
+
+    static_assert((kCapacity >= 2), "LZDictHashmap<T, N>'s capacity must be greater than or equal to 2.");
+    // Always satisfied
+    static_assert(((kCapacity & (kCapacity - 1)) == 0), "LZDictHashmap<T, N>'s capacity must be is a power of 2.");
+
 private:
-    size_type       mask_;
     offset_type *   prev_;
     offset_type *   head_;
 
 public:
-    LZDictHashmap(size_type capacity)
-        : mask_(static_cast<size_type>(capacity - 1)),
-          prev_(nullptr), 
+    LZDictHashmap()
+        : prev_(nullptr), 
           head_(nullptr) {
-        if (capacity == 0) {
-            throw std::runtime_error("LZDictHashmap<T>'s capacity must be greater than 0.");
-        }
-        if ((capacity & (capacity - 1)) != 0) {
-            throw std::runtime_error("LZDictHashmap<T>'s capacity must be is a power of 2.");
-        }
-        init(capacity);
+        init(kCapacity);
     }
 
     ~LZDictHashmap() {
@@ -46,7 +47,7 @@ public:
     }
 
     size_type capacity() const {
-        return (mask_ + 1);
+        return kCapacity;
     }
 
     offset_type * prev() {
@@ -66,13 +67,13 @@ public:
     }
 
     offset_type prev(offset_type offset) const {
-        offset &= mask_;
+        offset &= kOffsetMask;
         assert(head_ != nullptr);
         return *(prev_ + offset);
     }
 
     offset_type head(offset_type offset) const {
-        offset &= mask_;
+        offset &= kOffsetMask;
         assert(head_ != nullptr);
         return *(head_ + offset);
     }
@@ -82,7 +83,6 @@ private:
         assert(capacity > 0);
         assert((capacity & (capacity - 1)) == 0);
         offset_type * new_data = new offset_type[capacity * 2];
-        mask_ = static_cast<size_type>(capacity - 1);
         prev_ = new_data;
         head_ = new_data + capacity;
     }

@@ -20,6 +20,9 @@
     <Filter Include="src\lz77">
       <UniqueIdentifier>{a9fe3e8a-97c4-48d2-b8cf-93153ec3a40c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\std">
+      <UniqueIdentifier>{6ce77751-642a-465a-a913-cd738f723ea4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\ziplab\huffman\huffman.cpp">
@@ -110,6 +113,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\ziplab\lz77\lzDictHashmap.hpp">
       <Filter>src\lz77</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\std\bitset.h">
+      <Filter>src\std</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
