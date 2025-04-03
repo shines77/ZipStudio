@@ -131,7 +131,7 @@ public:
             return compressed;
         }
 
-        LZDictHashmap<offset_type, WindowBits> L1_hashmap;
+        //LZDictHashmap<offset_type, WindowBits> L1_hashmap;
 
         jstd::bitset<kBlockFlagSize> flag_bits;
         std::string block_data;
@@ -219,8 +219,8 @@ private:
         // Allocate the size of data to be added in advance
         compressed.reserve(compressed.size() + num_bytes);
 
-        assert(num_bytes == flag_bits.bytes());
-        compressed.append(flag_bits.data(), flag_bits.bytes());
+        //assert(num_bytes == flag_bits.bytes());
+        compressed.append(flag_bits.data(), num_bytes);
 
         return num_bytes;
     }

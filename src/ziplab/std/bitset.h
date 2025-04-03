@@ -36,10 +36,17 @@ public:
     static constexpr size_type kBitsPerByte = CHAR_BIT;
 
     // The total size of packing bits into words
-    static constexpr size_type kTotalWords = (Bits + (kBitsPerWord - 1)) / kBitsPerWord;
-    static constexpr size_type kTotalBytes = (Bits + (kBitsPerByte - 1)) / kBitsPerByte;
+    static constexpr size_type kOrigTotalWords = (Bits + (kBitsPerWord - 1)) / kBitsPerWord;
+    static constexpr size_type kOrigTotalBytes = (Bits + (kBitsPerByte - 1)) / kBitsPerByte;
+
+    static constexpr size_type kTotalWords = (Bits != 0) ? kOrigTotalWords : 1;
+    static constexpr size_type kTotalBytes = (Bits != 0) ? kOrigTotalBytes : 1;
 
     static constexpr ssize_type ksTotalWords = static_cast<ssize_type>(kTotalWords);
+
+    // Full words and rest bits
+    static constexpr size_type kFullWords = Bits / kBitsPerWord;
+    static constexpr size_type kRestBits = Bits % kBitsPerWord;
 
     static constexpr value_type kValue1 = static_cast<value_type>(1);
 
@@ -90,8 +97,8 @@ public:
             // Default construct
         }
 
-        reference(bitset<Bits> & set, size_t pos)
-            : bitset_(&set), pos_(pos) {
+        reference(bitset<Bits> & bset, size_t pos)
+            : bitset_(&bset), pos_(pos) {
             // Construct from bitset reference and position
         }
 
@@ -122,9 +129,9 @@ public:
     }
 
 	bool operator == (const bitset & right) const noexcept {
-        // test for bitset equality
+        // Test for bitset equality
 		for (ssize_type pos = 0; pos < ksTotalWords; pos++) {
-			if (array_[pos] != right.get_word(pos))
+			if (array_[pos] != right._get_word(pos))
 				return false;
         }
 		return true;
@@ -133,7 +140,7 @@ public:
 	bitset & operator &= (const bitset & right) noexcept {
         // And in right
 		for (ssize_type pos = 0; pos < ksTotalWords; pos++) {
-			array_[pos] &= right.get_word(pos);
+			array_[pos] &= right._get_word(pos);
         }
 		return *this;
     }
@@ -141,7 +148,7 @@ public:
 	bitset & operator |= (const bitset & right) noexcept {
         // Or in right
 		for (ssize_type pos = 0; pos < ksTotalWords; pos++) {
-			array_[pos] |= right.get_word(pos);
+			array_[pos] |= right._get_word(pos);
         }
 		return *this;
     }
@@ -149,7 +156,7 @@ public:
 	bitset & operator ^= (const bitset & right) noexcept {
         // Xor in right
 		for (ssize_type pos = 0; pos < ksTotalWords; pos++) {
-			array_[pos] ^= right.get_word(pos);
+			array_[pos] ^= right._get_word(pos);
         }
 		return *this;
     }
@@ -200,15 +207,25 @@ public:
     }
 
     value_type get_word(ssize_type index) {
-        assert(index < ksTotalWords);
-        return array_[index];
+		if (index >= ksTotalWords) {
+            // index out of range
+			throw_index_out_of_range();
+        }
+        return _get_word(index);
     }
 
 	bool test(size_type pos) const {
         // Test if bit at pos is set
-		if (Bits <= pos)
-			xran();	// pos off end
+		if (pos >= Bits) {
+            // pos out of range
+			throw_out_of_range();
+        }
 		return subscript(pos);
+    }
+
+	bool all() const noexcept {
+        // Test if all bits set
+		return (count() == size());
     }
 
 	bool any() const noexcept {
@@ -225,11 +242,6 @@ public:
 		return (!any());
     }
 
-	bool all() const noexcept {
-        // Test if all bits set
-		return (count() == size());
-    }
-
 	bitset & set() noexcept {
         // Set all bits true
 		tidy(static_cast<value_type>(~0));
@@ -238,12 +250,12 @@ public:
 
 	bitset & set(size_type pos, bool value = true) {
         // Set bit at pos to _Val
-		if (Bits <= pos) {
-            // pos off end
-			xran();
+		if (pos >= Bits) {
+            // pos out of range
+			throw_out_of_range();
         }
         ssize_type index = get_index(pos);
-        ssize_type shift = get_shift(pos);
+        value_type shift = get_shift(pos);
 		if (value)
 			array_[index] |= static_cast<value_type>(1) << shift;
 		else
@@ -279,12 +291,12 @@ public:
 
 	bitset & flip(size_type pos) {
         // Flip bit at pos
-		if (Bits <= pos) {
-            // pos off end
-			xran();
+		if (pos >= Bits) {
+            // pos out of range
+			throw_out_of_range();
         }
         ssize_type index = get_index(pos);
-        ssize_type shift = get_shift(pos);
+        value_type shift = get_shift(pos);
 		array_[index] ^= static_cast<value_type>(1) << shift;
 		return *this;
     }
@@ -294,8 +306,13 @@ private:
         return static_cast<ssize_type>(pos / kBitsPerWord);
     }
 
-    inline ssize_type get_shift(size_type pos) const {
-        return static_cast<ssize_type>(pos % kBitsPerWord);
+    inline value_type get_shift(size_type pos) const {
+        return static_cast<value_type>(pos % kBitsPerWord);
+    }
+
+    inline value_type _get_word(ssize_type index) {
+        assert(index < ksTotalWords);
+        return array_[index];
     }
 
     void validate() {
@@ -303,23 +320,53 @@ private:
     }
 
     void trim() {
-        //
+        // Clear any trailing bits in last word
+        // kRestBits = Bits % kBitsPerWord
+        trim_if(std::bool_constant<(Bits == 0) || (kRestBits != 0)>());
     }
 
-    void tidy() {
-        //
+	void trim_if(std::true_type) {
+        // Bits to trim, remove them
+        value_type shift = static_cast<value_type>(kRestBits);
+		array_[kFullWords] &= (static_cast<value_type>(1) << shift) - 1;
     }
 
-    void tidy(value_type value) {
-        //
+	void trim_if(std::false_type) {
+        // No bits to trim, do nothing
+    }
+
+    void tidy(value_type value = 0) {
+        // Set all words to _Wordval
+		for (ssize_type pos = 0; pos < ksTotalWords; pos++) {
+			array_[pos] = value;
+        }
+		if (value != 0) {
+			trim();
+        }
     }
 
     bool subscript(size_type pos) {
         return true;
     }
 
-    void xran() {
-        //
+	[[noreturn]] void throw_invalid_string_element() const {
+        // Report invalid string element in bitset conversion
+		throw std::invalid_argument("invalid jstd::bitset<N> char");
+    }
+
+	[[noreturn]] void throw_overflow() const {
+        // Report converted value too big to represent
+		throw std::overflow_error("jstd::bitset<N> overflow");
+    }
+
+	[[noreturn]] void throw_out_of_range() const {
+        // Report bit index out of range
+		throw std::out_of_range("invalid jstd::bitset<N> position");
+    }
+
+	[[noreturn]] void throw_index_out_of_range() const {
+        // Report bit index out of range
+		throw std::out_of_range("invalid jstd::bitset<N> index");
     }
 };
 
