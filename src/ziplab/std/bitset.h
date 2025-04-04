@@ -13,6 +13,24 @@
 
 namespace jstd {
 
+static const char * const s_bitsPerByteTable =
+	"\0\1\1\2\1\2\2\3\1\2\2\3\2\3\3\4"
+	"\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
+	"\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
+	"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+	"\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
+	"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+	"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+	"\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
+	"\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
+	"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+	"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+	"\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
+	"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+	"\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
+	"\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
+	"\4\5\5\6\5\6\6\7\5\6\6\7\6\7\7\x8";
+
 //
 // Store fixed-length sequence of Boolean elements
 //
@@ -42,17 +60,19 @@ public:
 
     // Full words and rest bits
     static constexpr size_type kFullWords = Bits / kBitsPerWord;
-    static constexpr size_type kRestBits = Bits % kBitsPerWord;
+    static constexpr size_type kRestBits  = Bits % kBitsPerWord;
 
-    static constexpr value_type kValue1 = static_cast<value_type>(1);
+    static constexpr value_type kValue1   = static_cast<value_type>(1);
+    static constexpr value_type kFullMask = static_cast<value_type>(-1);
+    static constexpr value_type kLastMask = (kRestBits != 0) ? ((kValue1 << kRestBits) - kValue1) : 0;
 
     // Need mask ?
     static constexpr bool bNeedMask = (Bits < kBitsPerWord);
-    static constexpr size_type kMask = static_cast<size_type>((kValue1 << (bNeedMask ? Bits : 0)) - kValue1);
+    static constexpr value_type kMask = static_cast<value_type>((kValue1 << (bNeedMask ? Bits : 0)) - kValue1);
 
     // Class reference
     class reference {
-        // proxy for an element
+        // Proxy for an element
         friend class bitset<Bits>;
 
     public:
@@ -183,6 +203,7 @@ public:
             }
             array_[0] <<= bit_shift;
         }
+
         trim();
         return *this;
     }
@@ -211,7 +232,7 @@ public:
 		return *this;
     }
 
-    const char * data() const noexcept {
+    constexpr const char * data() const noexcept {
         return reinterpret_cast<const char *>(&array_[0]);
     }
 
@@ -228,41 +249,44 @@ public:
 	    return Bits;
 	}
 
-	size_type count() const noexcept {
-        // Count number of set bits
-		const unsigned char * const bitsPerByteTable =
-			"\0\1\1\2\1\2\2\3\1\2\2\3\2\3\3\4"
-			"\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-			"\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-			"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-			"\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-			"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-			"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-			"\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-			"\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-			"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-			"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-			"\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-			"\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-			"\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-			"\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-			"\4\5\5\6\5\6\6\7\5\6\6\7\6\7\7\x8";
-		const unsigned char * ptr = (const unsigned char *)(const void *)array_;
-		const unsigned char * const last = ptr + sizeof(array_);
-		size_type total_count = 0;
-		for ( ; ptr != last; ptr++) {
-			total_count += bitsPerByteTable[*ptr];
-        }
-		return total_count;
-    }
-
-    value_type get_word(ssize_type index) {
+    value_type get_word(ssize_type index) const {
         // Get word at pos
 		if (index >= ksTotalWords) {
             // index out of range
 			throw_index_out_of_range();
         }
         return _get_word(index);
+    }
+
+	size_type count() const noexcept {
+        // Count number of set bits
+		const unsigned char * ptr = (const unsigned char *)(const void *)array_;
+		const unsigned char * const last = ptr + sizeof(array_);
+		size_type total_count = 0;
+		for ( ; ptr != last; ptr++) {
+			total_count += static_cast<size_type>(s_bitsPerByteTable[*ptr]);
+        }
+		return total_count;
+    }
+
+    size_type count_byte(ssize_type pos) const noexcept {
+        // Count number of bits at the specified pos
+        assert(index < kTotalBytes);
+		const unsigned char * first = (const unsigned char *)(const void *)array_;
+		const unsigned char * const ptr = first + pos;
+		return static_cast<size_type>(s_bitsPerByteTable[*ptr]);
+    }
+
+    size_type count_word(ssize_type index) const noexcept {
+        // Count number of set bits at the specified word
+        assert(index < kTotalWords);
+		const unsigned char * ptr = (const unsigned char *)(const void *)&array_[index];
+		const unsigned char * const last = ptr + sizeof(value_type);
+		size_type total_count = 0;
+		for ( ; ptr != last; ptr++) {
+			total_count += static_cast<size_type>(s_bitsPerByteTable[*ptr]);
+        }
+		return total_count;
     }
 
 	bool test(size_type pos) const {
@@ -276,7 +300,20 @@ public:
 
 	bool all() const noexcept {
         // Test if all bits set
+#if 1
+		for (size_type pos = 0; pos < kFullWords; pos++) {
+			if (array_[pos] != kFullMask)
+                return false;
+        }
+        // Check last element if need
+        if (kRestBits != 0) {
+            return (array_[kFullWords] == kLastMask);
+        } else {
+            return true;
+        }
+#else
 		return (count() == size());
+#endif
     }
 
 	bool any() const noexcept {
@@ -295,7 +332,7 @@ public:
 
 	bitset & set() noexcept {
         // Set all bits true
-		tidy(static_cast<value_type>(~0));
+		fill_all(static_cast<value_type>(~0));
 		return *this;
     }
 
@@ -316,7 +353,7 @@ public:
 
 	bitset & reset() noexcept {
         // Set all bits false
-		tidy();
+		fill_all();
 		return *this;
     }
 
@@ -373,7 +410,7 @@ private:
         return static_cast<value_type>(pos % kBitsPerWord);
     }
 
-    inline value_type _get_word(ssize_type index) {
+    inline value_type _get_word(ssize_type index) const {
         assert(index < ksTotalWords);
         return array_[index];
     }
@@ -405,7 +442,7 @@ private:
         // No bits to trim, do nothing
     }
 
-    void tidy(value_type value = 0) {
+    void fill_all(value_type value = 0) {
         // Set all words to _Wordval
 		for (ssize_type pos = 0; pos < ksTotalWords; pos++) {
 			array_[pos] = value;
