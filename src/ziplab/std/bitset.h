@@ -31,6 +31,8 @@ static const char * const s_bitsPerByteTable =
     "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
     "\4\5\5\6\5\6\6\7\5\6\6\7\6\7\7\x8";
 
+#pragma pack(push, 8)
+
 //
 // Store fixed-length sequence of Boolean elements
 //
@@ -525,6 +527,8 @@ bitset<Bits> operator ^ (const bitset<Bits> & left,
     result ^= right;
     return result;
 }
+
+#pragma pack(pop)
 
 } // namespace jstd
 
