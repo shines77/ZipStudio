@@ -95,17 +95,23 @@ private:
         }
     };
 
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wpedantic"
+    //
+    // Fixed warning: ISO C++ prohibits anonymous structs
+    //
+
     union PackedPair {
+        struct Bytes {
+            std::uint8_t low;
+            std::uint8_t high;
+        } bytes;
         std::uint16_t value;
-        struct {
-            std::uint8_t first;
-            std::uint8_t second;
-        };
 
         PackedPair() : value(0) {}
-        PackedPair(std::uint16_t value) : value(value) {}
-        PackedPair(std::uint8_t first, std::uint8_t second)
-            : first(first), second(second) {}
+        explicit PackedPair(std::uint16_t value) : value(value) {}
+        PackedPair(std::uint8_t low, std::uint8_t high)
+            : bytes{low, high} {}
 
         PackedPair(const PackedPair & src) : value(src.value) {}
 
@@ -114,6 +120,8 @@ private:
             return *this;
         }
     };
+
+    #pragma GCC diagnostic pop
 
 public:
     LZSSCompressor() {
