@@ -17,6 +17,10 @@
 #include "ziplab/lz77/lz77.hpp"
 #include "ziplab/lz77/lzDictHashmap.hpp"
 
+#include "ziplab/stream/MemoryBuffer.h"
+#include "ziplab/stream/InputStream.h"
+#include "ziplab/stream/OutputStream.h"
+
 namespace ziplab {
 
 template <std::size_t WindowBits, std::size_t LookAheadBits>
@@ -121,84 +125,82 @@ public:
     }
 
     // Compress data
-    std::string plain_compress(const std::string & input_data) {
+    MemoryBuffer plain_compress(const std::string & input_data) {
         static constexpr size_type kWordLen = sizeof(size_type);
         static constexpr size_type kMaxFlag = static_cast<size_type>(1) << (kWordLen - 1);
 
-        std::string compressed;
+        OutputStream compressed;
         size_type data_len = input_data.size();
-        if (ziplab_unlikely(data_len == 0)) {
-            return compressed;
+        if (ziplab_likely(data_len != 0)) {
+            //LZDictHashmap<offset_type, WindowBits> L1_hashmap;
+
+            jstd::bitset<kBlockFlagSize> flag_bits;
+            OutputStream block_data;
+
+            //flag_bits.reset();       
+            block_data.reserve(kBlockDataSize);
+
+            static constexpr size_type kBlockFlagLen = (kBlockFlagSize + kWordLen - 1) /  kWordLen;
+
+            size_type pos = 0;
+            assert(data_len > 0);
+            do {
+                size_type remain_size = data_len - pos;
+                size_type block_capacity = (remain_size > kBlockDataSize) ? kBlockDataSize : remain_size;
+                size_type block_pos = pos;
+                size_type block_end = pos + block_capacity;
+                while (block_pos < block_end) {
+                    // Calculate the boundary of the sliding window.
+                    ssize_type window_first = block_pos - kWindowSize;  // It's can be negative
+                    size_type window_start = (window_first >= 0) ? window_first : 0;
+                    size_type window_size = (std::min)(kWindowSize, block_pos);
+                    size_type lookahead_size = (std::min)(kMaxLookAheadSize, data_len - block_pos);
+                    size_type lookahead_last = (std::min)(pos + kMaxLookAheadSize, data_len);
+
+                    const char * window = input_data.data() + window_start;
+                    const char * lookahead = input_data.data() + block_pos;
+
+                    MatchInfo match_info = plain_find_match(window, lookahead, window_size, lookahead_size);
+
+                    if (ziplab_likely(match_info.match_len < kMinMatchLength)) {
+                        block_data.writeByte(input_data[block_pos++]);
+                        block_data.writeByte(input_data[block_pos++]);
+                    } else {
+                        size_type real_match_len = match_info.match_len - kMinMatchLength;
+                        assert(real_match_len < kMaxMatchLength);
+                        assert(match_info.match_pos < kWindowSize);
+                        PackedPair packedPair(static_cast<std::uint16_t>((real_match_len << kWindowBits) | match_info.match_pos));
+                        block_data.writeByte(packedPair.first);
+                        block_data.writeByte(packedPair.second);
+
+                        assert(match_info.match_pos != npos);
+                        flag_bits.set(block_pos);
+
+                        block_pos += match_info.match_len;
+                    }
+                }
+
+                // Output flag bits and the data buffer
+                write_flag_bits(compressed, flag_bits, block_capacity);
+                compressed.write(block_data);
+
+                flag_bits.reset();
+                block_data.clear();
+
+                pos = block_end;
+            } while (pos < data_len);
         }
 
-        //LZDictHashmap<offset_type, WindowBits> L1_hashmap;
-
-        jstd::bitset<kBlockFlagSize> flag_bits;
-        std::string block_data;
-
-        //flag_bits.reset();       
-        block_data.reserve(kBlockDataSize);
-
-        static constexpr size_type kBlockFlagLen = (kBlockFlagSize + kWordLen - 1) /  kWordLen;
-
-        size_type pos = 0;
-        assert(data_len > 0);
-        do {
-            size_type remain_size = data_len - pos;
-            size_type block_capacity = (remain_size > kBlockDataSize) ? kBlockDataSize : remain_size;
-            size_type block_pos = pos;
-            size_type block_end = pos + block_capacity;
-            while (block_pos < block_end) {
-                // Calculate the boundary of the sliding window.
-                ssize_type window_first = block_pos - kWindowSize;  // It's can be negative
-                size_type window_start = (window_first >= 0) ? window_first : 0;
-                size_type window_size = (std::min)(kWindowSize, block_pos);
-                size_type lookahead_size = (std::min)(kMaxLookAheadSize, data_len - block_pos);
-                size_type lookahead_last = (std::min)(pos + kMaxLookAheadSize, data_len);
-
-                const char * window = input_data.data() + window_start;
-                const char * lookahead = input_data.data() + block_pos;
-
-                MatchInfo match_info = plain_find_match(window, lookahead, window_size, lookahead_size);
-
-                if (ziplab_likely(match_info.match_len < kMinMatchLength)) {
-                    block_data.push_back(input_data[block_pos++]);
-                    block_data.push_back(input_data[block_pos++]);
-                } else {
-                    size_type real_match_len = match_info.match_len - kMinMatchLength;
-                    assert(real_match_len < kMaxMatchLength);
-                    assert(match_info.match_pos < kWindowSize);
-                    PackedPair packedPair(static_cast<std::uint16_t>((real_match_len << kWindowBits) | match_info.match_pos));
-                    block_data.push_back(packedPair.first);
-                    block_data.push_back(packedPair.second);
-
-                    assert(match_info.match_pos != npos);
-                    flag_bits.set(block_pos);
-
-                    block_pos += match_info.match_len;
-                }
-            }
-
-            // Output flag bits and the data buffer
-            append_flag_bits(compressed, flag_bits, block_capacity);
-            compressed.append(block_data);
-
-            flag_bits.reset();
-            block_data.clear();
-
-            pos = block_end;
-        } while (pos < data_len);
-
-        return compressed;
+        return compressed.buffer();
     }
 
     // Decompress data
-    std::string plain_decompress(const std::string & compressed_data) {
-        std::string decompressed;
+    MemoryBuffer plain_decompress(const MemoryBuffer & compressed_data) {
+        OutputStream decompressed;
 
         ZIPLAB_UNUSED(compressed_data);
 
-        return decompressed;
+        return decompressed.buffer();
     }
 
     // Compress file
@@ -212,9 +214,9 @@ public:
     }
 
 private:
-    inline size_type append_flag_bits(std::string & compressed,
-                                      const jstd::bitset<kBlockFlagSize> & flag_bits,
-                                      size_type flag_capacity) {
+    inline size_type write_flag_bits(OutputStream & compressed,
+                                     const jstd::bitset<kBlockFlagSize> & flag_bits,
+                                     size_type flag_capacity) {
         assert(flag_capacity <= kBlockFlagSize);
         size_type num_bytes = (flag_capacity + (CHAR_BIT - 1)) / CHAR_BIT;
 
@@ -222,7 +224,7 @@ private:
         compressed.reserve(compressed.size() + num_bytes);
 
         //assert(num_bytes == flag_bits.bytes());
-        compressed.append(flag_bits.data(), num_bytes);
+        compressed.write(flag_bits.data(), num_bytes);
 
         return num_bytes;
     }

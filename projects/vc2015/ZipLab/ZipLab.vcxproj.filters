@@ -117,5 +117,8 @@
     <ClInclude Include="..\..\..\src\ziplab\std\bitset.h">
       <Filter>src\std</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\IOStreamRoot.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

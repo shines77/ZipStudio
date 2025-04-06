@@ -17,16 +17,20 @@
 #include "ziplab/basic/stddef.h"
 #include "ziplab/stream/MemoryBuffer.h"
 #include "ziplab/stream/MemoryView.h"
+#include "ziplab/stream/IOStreamRoot.h"
 
 namespace ziplab {
 
 template <typename MemoryBufferT, typename CharT, typename Traits = std::char_traits<CharT>>
-class BasicInputStream
+class BasicInputStream : public BasicIOStreamRoot<MemoryBufferT, CharT, Traits>
 {
 public:
     using buffer_type   = MemoryBufferT;
     using char_type     = CharT;
     using traits_type   = Traits;
+
+    using super_type    = BasicIOStreamRoot<buffer_type, char_type, traits_type>;
+    using this_type     = BasicInputStream<buffer_type, char_type, traits_type>;
 
 #if USE_MEMORY_STORAGE
     using memory_buffer_t = BasicMemoryBuffer< BasicMemoryStorage<char_type, traits_type> >;
@@ -47,138 +51,82 @@ public:
     using vector_type = std::vector<char_type>;
 
 private:
-    buffer_type buffer_;
-    index_type pos_;
-    size_type size_;
+    index_type  pos_;
 
 public:
-    BasicInputStream() : buffer_(), pos_(0), size_(0) {
+    BasicInputStream() : super_type(), pos_(0) {
     }
-    BasicInputStream(size_type capacity) : buffer_(capacity), pos_(0), size_(0) {
+    BasicInputStream(size_type capacity) : super_type(capacity), pos_(0) {
     }
 
     BasicInputStream(const memory_buffer_t & buffer)
-        : buffer_(buffer), pos_(0), size_(buffer.size()) {
+        : super_type(buffer), pos_(0) {
     }
     BasicInputStream(memory_buffer_t && buffer)
-        : buffer_(std::forward<memory_buffer_t>(buffer)), pos_(0), size_(buffer.size()) {
+        : super_type(std::forward<memory_buffer_t>(buffer)), pos_(0) {
     }
 
     BasicInputStream(const char_type * data, size_type size)
-        : buffer_(data, size), pos_(0), size_(size) {
+        : super_type(data, size), pos_(0) {
     }
 
     template <size_type N>
     BasicInputStream(const char_type (&data)[N])
-        : buffer_(data, N), pos_(0), size_(N) {
+        : super_type(data, N), pos_(0) {
     }
 
     template <size_type N>
     BasicInputStream(const std::array<string_type, N> & strings)
-        : buffer_(strings), pos_(0), size_(N) {
+        : super_type(strings), pos_(0) {
     }
 
     BasicInputStream(const string_type & src)
-        : buffer_(src), pos_(0), size_(src.size()) {
+        : super_type(src), pos_(0) {
     }
 
     BasicInputStream(const vector_type & src)
-        : buffer_(src), pos_(0), size_(src.size()) {
+        : super_type(src), pos_(0) {
     }
 
     template <typename Container>
     BasicInputStream(const Container & src)
-        : buffer_(src), pos_(0), size_(src.size()) {
+        : super_type(src), pos_(0) {
     }
 
     BasicInputStream(const BasicInputStream & src)
-        : buffer_(src.buffer()), pos_(src.pos()), size_(src.size()) {
+        : super_type(src.buffer()), pos_(src.pos()) {
     }
     BasicInputStream(BasicInputStream && src)
-        : buffer_(std::forward<memory_buffer_t>(src.buffer())),
-          pos_(src.pos()), size_(src.size()) {
+        : super_type(std::forward<memory_buffer_t>(src.buffer())),
+          pos_(src.pos()) {
     }
 
     ~BasicInputStream() {
-        destroy();
+        //destroy();
     }
 
-    bool is_valid() const { return buffer_.is_valid(); }
-    bool is_empty() const { return buffer_.is_empty(); }
-
-    char_type * data() { return buffer_.data(); }
-    const char_type * data() const { return buffer_.data(); }
-
-    index_type pos() const { return pos_; }
-    size_type size() const { return size_; }
-    size_type capacity() const { return buffer_.size(); }
-
-    size_type upos() const { return static_cast<size_type>(pos_); }
-    index_type ssize() const { return static_cast<index_type>(size_); }
-    index_type scapacity() const { return buffer_.ssize(); }
-
-    memory_buffer_t & buffer() { return buffer_; }
-    const memory_buffer_t & buffer() const { return buffer_; }
-
-    // Position
-    char_type * begin() { return buffer_.data(); }
-    const char_type * begin() const { return buffer_.data(); }
-
-    char_type * end() { return (buffer_.data() + size()); }
-    const char_type * end() const { return (buffer_.data() + size()); }
-
-    char_type * tail() { return (buffer_.data() + buffer_.size()); }
-    const char_type * tail() const { return (buffer_.data() + buffer_.size()); }
-
-    char_type * current() { return (buffer_.data() + pos()); }
-    const char_type * current() const { return (buffer_.data() + pos()); }
-
-    void destroy() {
-        buffer_.destroy();
-        reset();
+    // Get the base class pointrt
+    super_type * super(this_type * derived) {
+        return static_cast<super_type *>(derived);
     }
 
-    void reset() {
-        pos_ = 0;
-        size_ = 0;
+    const super_type * super(const this_type * derived) const {
+        return static_cast<const super_type *>(const_cast<this_type *>(derived));
     }
 
-    void reserve(size_type new_capacity) {
-        buffer_.reserve(new_capacity);
-        assert(size() <= capacity());
-        assert(pos() <= ssize());
+    // Get the base class reference
+    super_type & super_ref(this_type * derived) {
+        return *static_cast<super_type *>(derived);
     }
 
-    void resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
-        buffer_.resize(new_size, fill_new, init_val);
-        reset();
-    }
-
-    void keep_reserve(size_type new_capacity) {
-        buffer_.keep_reserve(new_capacity);
-        assert(size() <= capacity());
-        assert(pos() <= ssize());        
-    }
-
-    void keep_resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
-        buffer_.keep_resize(new_size, fill_new, init_val);
-        if (size() > capacity()) {
-            size_ = capacity();
-        }
-        if (pos() > ssize()) {
-            pos_ = ssize();
-        }
-    }
-
-    void clear() {
-        buffer_.clear();
-        reset();
+    const super_type & super_ref(const this_type * derived) const {
+        return *static_cast<const super_type *>(const_cast<this_type *>(derived));
     }
 
     void copy(const BasicInputStream & src) {
-        buffer_.copy(src);
-        pos_ = src.pos();
-        size_ = src.size();
+        if (std::addressof(src) != this) {
+            copy_data(src);
+        }
     }
 
     void swap(BasicInputStream & other) {
@@ -189,38 +137,6 @@ public:
 
     friend inline void swap(BasicInputStream & lhs, BasicInputStream & rhs) {
         lhs.swap(rhs);
-    }
-
-    bool is_overflow() const {
-        return (pos() < ssize());
-    }
-
-    template <typename T>
-    bool is_overflow(const T & val) const {
-        ZIPLAB_UNUSED(val);
-        return ((pos() + sizeof(val)) <= ssize());
-    }
-
-    index_type back(offset_type offset) {
-        pos_ -= static_cast<index_type>(offset);
-        return pos_;
-    }
-
-    index_type skip(offset_type offset) {
-        pos_ += static_cast<index_type>(offset);
-        return pos_;
-    }
-
-    void seekToBegin() {
-        pos_ = 0;
-    }
-
-    void seekToEnd() {
-        pos_ = ssize();
-    }
-
-    void seekTo(index_type pos) {
-        pos_ = pos;
     }
 
     // Safety skip value
@@ -319,7 +235,7 @@ public:
 
     // Unsafe skip value
     template <typename T>
-    void usSkipValue(T & val) {
+    void unsafeSkipValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(pos() >= 0);
         assert((pos_ + step) <= ssize());
@@ -329,116 +245,116 @@ public:
 
     void skipBool() {
         std::uint8_t byte;
-        usSkipValue(byte);
+        unsafeSkipValue(byte);
         ZIPLAB_UNUSED(byte);
     }
 
     void skipChar() {
         char ch;
-        usSkipValue(ch);
+        unsafeSkipValue(ch);
         ZIPLAB_UNUSED(ch);
     }
 
     void skipUChar() {
         unsigned char ch;
-        usSkipValue(ch);
+        unsafeSkipValue(ch);
         ZIPLAB_UNUSED(ch);
     }
 
     void skipWChar() {
         wchar_t ch;
-        usSkipValue(ch);
+        unsafeSkipValue(ch);
         ZIPLAB_UNUSED(ch);
     }
 
     void skipSByte() {
         std::int8_t sbyte;
-        usSkipValue(sbyte);
+        unsafeSkipValue(sbyte);
         ZIPLAB_UNUSED(sbyte);
     }
 
     void skipByte() {
         std::uint8_t byte;
-        usSkipValue(byte);
+        unsafeSkipValue(byte);
         ZIPLAB_UNUSED(byte);
     }
 
     void skipInt8() {
         std::int8_t val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipUInt8() {
         std::uint8_t val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipInt16() {
         std::int16_t val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipUInt16() {
         std::uint16_t val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipInt32() {
         std::int32_t val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipUInt32() {
         std::uint32_t val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipInt64() {
         std::int64_t val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipUInt64() {
         std::uint64_t val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipSizeT() {
         std::size_t val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipFloat() {
         float val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipDouble() {
         double val;
-        usSkipValue(val);
+        unsafeSkipValue(val);
         ZIPLAB_UNUSED(val);
     }
 
     void skipVoidPtr() {
         void * pt;
-        usSkipValue(pt);
+        unsafeSkipValue(pt);
         ZIPLAB_UNUSED(pt);
     }
 
     template <typename T>
     void skipPtr() {
         T * pt;
-        usSkipValue(pt);
+        unsafeSkipValue(pt);
         ZIPLAB_UNUSED(pt);
     }
 
@@ -537,7 +453,7 @@ public:
 
     // Unsafe peek value
     template <typename T>
-    void usPeekValue(T & val) {
+    void unsafePeekValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(pos() >= 0);
         assert((pos_ + step) <= ssize());
@@ -546,116 +462,116 @@ public:
 
     bool peekBool() {
         std::uint8_t byte;
-        usPeekValue(byte);
+        unsafePeekValue(byte);
         return (byte != 0);
     }
 
     char peekChar() {
         char ch;
-        usPeekValue(ch);
+        unsafePeekValue(ch);
         return ch;
     }
 
     unsigned char peekUChar() {
         unsigned char ch;
-        usPeekValue(ch);
+        unsafePeekValue(ch);
         return ch;
     }
 
     wchar_t peekWChar() {
         wchar_t ch;
-        usPeekValue(ch);
+        unsafePeekValue(ch);
         return ch;
     }
 
     std::int8_t peekSByte() {
         std::int8_t sbyte;
-        usPeekValue(sbyte);
+        unsafePeekValue(sbyte);
         return sbyte;
     }
 
     std::uint8_t peekByte() {
         std::uint8_t byte;
-        usPeekValue(byte);
+        unsafePeekValue(byte);
         return byte;
     }
 
     std::int8_t peekInt8() {
         std::int8_t val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     std::uint8_t peekUInt8() {
         std::uint8_t val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     std::int16_t peekInt16() {
         std::int16_t val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     std::uint16_t peekUInt16() {
         std::uint16_t val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     std::int32_t peekInt32() {
         std::int32_t val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     std::uint32_t peekUInt32() {
         std::uint32_t val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     std::int64_t peekInt64() {
         std::int64_t val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     std::uint64_t peekUInt64() {
         std::uint64_t val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     std::size_t peekSizeT() {
         std::size_t val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     float peekFloat() {
         float val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     double peekDouble() {
         double val;
-        usPeekValue(val);
+        unsafePeekValue(val);
         return val;
     }
 
     void * peekVoidPtr() {
         void * pt;
-        usPeekValue(pt);
+        unsafePeekValue(pt);
         return pt;
     }
 
     template <typename T>
     T * peekPtr() {
         T * pt;
-        usPeekValue(pt);
+        unsafePeekValue(pt);
         return pt;
     }
 
@@ -755,7 +671,7 @@ public:
 
     // Unsafe read value
     template <typename T>
-    void usReadValue(T & val) {
+    void unsafeReadValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(pos() >= 0);
         assert((pos_ + step) <= ssize());
@@ -765,155 +681,154 @@ public:
 
     bool readBool() {
         std::uint8_t byte;
-        usReadValue(byte);
+        unsafeReadValue(byte);
         return (byte != 0);
     }
 
     char readChar() {
         char ch;
-        usReadValue(ch);
+        unsafeReadValue(ch);
         return ch;
     }
 
     unsigned char readUChar() {
         unsigned char ch;
-        usReadValue(ch);
+        unsafeReadValue(ch);
         return ch;
     }
 
     wchar_t readWChar() {
         wchar_t ch;
-        usReadValue(ch);
+        unsafeReadValue(ch);
         return ch;
     }
 
     std::int8_t readSByte() {
         std::int8_t sbyte;
-        usReadValue(sbyte);
+        unsafeReadValue(sbyte);
         return sbyte;
     }
 
     std::uint8_t readByte() {
         std::uint8_t byte;
-        usReadValue(byte);
+        unsafeReadValue(byte);
         return byte;
     }
 
     std::int8_t readInt8() {
         std::int8_t val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     std::uint8_t readUInt8() {
         std::uint8_t val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     std::int16_t readInt16() {
         std::int16_t val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     std::uint16_t readUInt16() {
         std::uint16_t val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     std::int32_t readInt32() {
         std::int32_t val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     std::uint32_t readUInt32() {
         std::uint32_t val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     std::int64_t readInt64() {
         std::int64_t val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     std::uint64_t readUInt64() {
         std::uint64_t val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     std::size_t readSizeT() {
         std::size_t val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     float readFloat() {
         float val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     double readDouble() {
         double val;
-        usReadValue(val);
+        unsafeReadValue(val);
         return val;
     }
 
     void * readVoidPtr() {
         void * pt;
-        usReadValue(pt);
+        unsafeReadValue(pt);
         return pt;
     }
 
     template <typename T>
     T * readPtr() {
         T * pt;
-        usReadValue(pt);
+        unsafeReadValue(pt);
         return pt;
     }
 
 protected:
-    //
-
-private:
     inline void clear_data() {
         //
     }
 
     inline void copy_data(const BasicInputStream & src) {
-        //
+        super_ref(this).copy_data(super_ref(&src));
     }
 
     inline void swap_data(BasicInputStream & other) {
         assert(std::addressof(other) != this);
+        //super_ref(this).swap_data(super_ref(&src));
         using std::swap;
-        swap(this->buffer_, other.buffer_);
-        swap(this->pos_, other.pos_);
-        swap(this->size_, other.size_);
+        swap(super_ref(this), super_ref(&other));
     }
+
+private:
+    //
 };
 
 #if USE_MEMORY_STORAGE
 
-using InputStreamBuffer  = BasicInputStream< BasicMemoryBuffer< BasicMemoryStorage<char, std::char_traits<char>> >, char, std::char_traits<char> >;
-using WInputStreamBuffer = BasicInputStream< BasicMemoryBuffer< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>> >, wchar_t, std::char_traits<wchar_t> >;
+using InputStream  = BasicInputStream< BasicMemoryBuffer< BasicMemoryStorage<char, std::char_traits<char>> >, char, std::char_traits<char> >;
+using WInputStream = BasicInputStream< BasicMemoryBuffer< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>> >, wchar_t, std::char_traits<wchar_t> >;
 
 using InputStreamView  = BasicInputStream< BasicMemoryView< BasicMemoryStorage<char, std::char_traits<char>> >, char, std::char_traits<char>>;
 using WInputStreamView = BasicInputStream< BasicMemoryView< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>> >, wchar_t, std::char_traits<wchar_t> >;
 
 #else
 
-using InputStreamBuffer  = BasicInputStream<BasicMemoryBuffer<char, std::char_traits<char>>, char, std::char_traits<char>>;
-using WInputStreamBuffer = BasicInputStream<BasicMemoryBuffer<wchar_t, std::char_traits<wchar_t>>, wchar_t, std::char_traits<wchar_t>>;
+using InputStream  = BasicInputStream< BasicMemoryBuffer<char, std::char_traits<char> >, char, std::char_traits<char>>;
+using WInputStream = BasicInputStream< BasicMemoryBuffer<wchar_t, std::char_traits<wchar_t> >, wchar_t, std::char_traits<wchar_t>>;
 
-using InputStreamView  = BasicInputStream<BasicMemoryView<char, std::char_traits<char>>, char, std::char_traits<char>>;
-using WInputStreamView = BasicInputStream<BasicMemoryView<wchar_t, std::char_traits<wchar_t>>, wchar_t, std::char_traits<wchar_t>>;
+using InputStreamView  = BasicInputStream< BasicMemoryView<char, std::char_traits<char> >, char, std::char_traits<char>>;
+using WInputStreamView = BasicInputStream< BasicMemoryView<wchar_t, std::char_traits<wchar_t> >, wchar_t, std::char_traits<wchar_t>>;
 
 #endif
 
