@@ -95,11 +95,13 @@ private:
         }
     };
 
+#if defined(__GNUC__)
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wpedantic"
     //
     // Fixed warning: ISO C++ prohibits anonymous structs
     //
+#endif
 
     union PackedPair {
         struct Bytes {
@@ -121,7 +123,9 @@ private:
         }
     };
 
+#if defined(__GNUC__)
     #pragma GCC diagnostic pop
+#endif
 
 public:
     LZSSCompressor() {
@@ -178,8 +182,8 @@ public:
                         assert(real_match_len < kMaxMatchLength);
                         assert(match_info.match_pos < kWindowSize);
                         PackedPair packedPair(static_cast<std::uint16_t>((real_match_len << kWindowBits) | match_info.match_pos));
-                        block_data.writeByte(packedPair.first);
-                        block_data.writeByte(packedPair.second);
+                        block_data.writeByte(packedPair.bytes.low);
+                        block_data.writeByte(packedPair.bytes.high);
 
                         assert(match_info.match_pos != npos);
                         flag_bits.set(block_pos);
