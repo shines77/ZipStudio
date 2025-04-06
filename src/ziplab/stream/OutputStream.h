@@ -311,7 +311,7 @@ public:
         unsafeWriteValue(val);
     }
 
-    std::int16_t unsafeWriteInt16(std::int16_t val) {
+    void unsafeWriteInt16(std::int16_t val) {
         unsafeWriteValue(val);
     }
 

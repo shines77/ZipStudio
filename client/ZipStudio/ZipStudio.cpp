@@ -158,8 +158,10 @@ void ziplab_huffman_test()
     huffman.decompressFile("compressed_lab.bin", "decompressed_lab.txt");
 }
 
-bool compare_buffer(const ziplab::MemoryBuffer & right, const std::string & left)
+bool compare_buffer(const ziplab::MemoryBuffer & left, const std::string & right)
 {
+    ZIPLAB_UNUSED(left);
+    ZIPLAB_UNUSED(right);
     return true;
 }
 
