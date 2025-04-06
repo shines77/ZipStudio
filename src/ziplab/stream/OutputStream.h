@@ -141,8 +141,8 @@ public:
 
     bool write(const char_type * data, size_type size) {
         index_type s_size = static_cast<index_type>(size);
-        if ((pos_ + s_size) <= ssize()) {
-            char_type * current = buffer_.data() + pos_;
+        if ((pos_ + s_size) <= this->ssize()) {
+            char_type * current = this->buffer_.data() + pos_;
 #if 0
             std::memcpy((void *)current, (const void *)data, size * sizeof(char_type));
 #else
@@ -176,9 +176,9 @@ public:
     template <typename T>
     bool writeValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos() >= 0);
-        if ((pos_ + step) <= ssize()) {
-            char_type * current = buffer_.data() + pos_;
+        assert(this->pos() >= 0);
+        if ((pos_ + step) <= this->ssize()) {
+            char_type * current = this->buffer_.data() + pos_;
             *(reinterpret_cast<T *>(current)) = val;
             pos_ += step;
             return true;
@@ -271,9 +271,9 @@ public:
     template <typename T>
     void unsafeWriteValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos() >= 0);
-        assert((pos_ + step) <= ssize());
-        char_type * current = buffer_.data() + pos_;
+        assert(this->pos() >= 0);
+        assert((pos_ + step) <= this->ssize());
+        char_type * current = this->buffer_.data() + pos_;
         *(reinterpret_cast<T *>(current)) = val;
         pos_ += step;
     }
@@ -301,7 +301,6 @@ public:
 
     void unsafeWriteByte(std::uint8_t byte) {
         unsafeWriteValue(byte);
-        return byte;
     }
 
     void unsafeWriteInt8(std::int8_t val) {

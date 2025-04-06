@@ -143,8 +143,8 @@ public:
     template <typename T>
     bool skipValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos() >= 0);
-        if ((pos_ + step) <= ssize()) {
+        assert(this->pos() >= 0);
+        if ((pos_ + step) <= this->ssize()) {
             ZIPLAB_UNUSED(val);
             pos_ += step;
             return true;
@@ -237,8 +237,8 @@ public:
     template <typename T>
     void unsafeSkipValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos() >= 0);
-        assert((pos_ + step) <= ssize());
+        assert(this->pos() >= 0);
+        assert((pos_ + step) <= this->ssize());
         ZIPLAB_UNUSED(val);
         pos_ += step;
     }
@@ -362,9 +362,9 @@ public:
     template <typename T>
     bool peekValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos() >= 0);
-        if ((pos_ + step) <= ssize()) {
-            val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
+        assert(this->pos() >= 0);
+        if ((pos_ + step) <= this->ssize()) {
+            val = *(reinterpret_cast<T *>(this->buffer_.data() + pos_));
             return true;
         } else {
             return false;
@@ -455,9 +455,9 @@ public:
     template <typename T>
     void unsafePeekValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos() >= 0);
-        assert((pos_ + step) <= ssize());
-        val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
+        assert(this->pos() >= 0);
+        assert((pos_ + step) <= this->ssize());
+        val = *(reinterpret_cast<T *>(this->buffer_.data() + pos_));
     }
 
     bool peekBool() {
@@ -579,9 +579,9 @@ public:
     template <typename T>
     bool readValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos() >= 0);
-        if ((pos_ + step) <= ssize()) {
-            val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
+        assert(this->pos() >= 0);
+        if ((pos_ + step) <= this->ssize()) {
+            val = *(reinterpret_cast<T *>(this->buffer_.data() + pos_));
             pos_ += step;
             return true;
         } else {
@@ -673,9 +673,9 @@ public:
     template <typename T>
     void unsafeReadValue(T & val) {
         static constexpr index_type step = sizeof(T);
-        assert(pos() >= 0);
-        assert((pos_ + step) <= ssize());
-        val = *(reinterpret_cast<T *>(buffer_.data() + pos_));
+        assert(this->pos() >= 0);
+        assert((pos_ + step) <= this->ssize());
+        val = *(reinterpret_cast<T *>(this->buffer_.data() + pos_));
         pos_ += step;
     }
 
