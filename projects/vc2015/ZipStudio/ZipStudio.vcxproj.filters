@@ -10,5 +10,8 @@
     <ClCompile Include="..\..\..\client\ZipStudio\ZipStudio.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\client\ZipStudio\dmc_test.h">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

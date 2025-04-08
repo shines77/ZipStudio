@@ -104,16 +104,16 @@ private:
 #endif
 
     union PackedPair {
-        struct Bytes {
+        struct Parts {
             std::uint8_t low;
             std::uint8_t high;
-        } bytes;
+        } parts;
         std::uint16_t value;
 
         PackedPair() : value(0) {}
         explicit PackedPair(std::uint16_t value) : value(value) {}
         PackedPair(std::uint8_t low, std::uint8_t high)
-            : bytes{low, high} {}
+            : parts{low, high} {}
 
         PackedPair(const PackedPair & src) : value(src.value) {}
 
@@ -182,8 +182,8 @@ public:
                         assert(real_match_len < kMaxMatchLength);
                         assert(match_info.match_pos < kWindowSize);
                         PackedPair packedPair(static_cast<std::uint16_t>((real_match_len << kWindowBits) | match_info.match_pos));
-                        block_data.writeByte(packedPair.bytes.low);
-                        block_data.writeByte(packedPair.bytes.high);
+                        block_data.writeByte(packedPair.parts.low);
+                        block_data.writeByte(packedPair.parts.high);
 
                         assert(match_info.match_pos != npos);
                         flag_bits.set(block_pos);

@@ -24,6 +24,8 @@
 
 #include <ziplab/lz77/lzss.hpp>
 
+#include "dmc_test.h"
+
 #if defined(_MSC_VER)
 #pragma comment(lib, "ZipStd.lib")
 #pragma comment(lib, "ZipLab.lib")
@@ -184,6 +186,41 @@ void ziplab_lzss_test()
     }
 }
 
+// Example usage
+int dynamic_markov_compression_test()
+{
+    // Create compressor with clone threshold 1.1
+    DMCompressor compressor(2.0);
+    
+    // Sample data (simple 0101 pattern)
+    std::vector<int> testData = { 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 };
+    // std::vector<int> testData = { 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0 };
+    //std::vector<int> testData = { 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1 };
+    
+    std::cout << "Processing bits with probabilities:" << std::endl << std::endl;
+
+    std::size_t i = 0;
+    for (int bit : testData) {
+        double p0 = compressor.getProbability0();
+        std::cout << "Idx: " << (i + 1)
+                  << ", current: " << compressor.getCurrentState()
+                  << std::fixed << std::setprecision(5)
+                  << ", P(0): " << p0 
+                  << ", P(1): " << (1 - p0)
+                  << ", Bit: " << bit
+                  << std::endl;
+        compressor.processBit(bit);
+        i++;
+    }
+    
+    // Display final state machine size
+    std::cout << std::endl;
+    std::cout << "Final number of states: " << compressor.getStateCount() << std::endl;
+    std::cout << std::endl;
+
+    return 0;
+}
+
 int main(int argc, char * argv[])
 {
     ZIPLAB_UNUSED(argc);
@@ -201,8 +238,10 @@ int main(int argc, char * argv[])
 
     ziplab_InputStream_test();
 
+    dynamic_markov_compression_test();
+
 #if defined(_MSC_VER)
-    ::system("pause");
+    //::system("pause");
 #endif
     return 0;
 }
