@@ -81,16 +81,16 @@ public:
     static constexpr size_type npos = static_cast<size_type>(-1);
 
 private:
-    struct MatchInfo {
+    struct MatchResult {
         size_type match_len;
         size_type match_pos;
 
-        MatchInfo() : match_len(0), match_pos(npos) {}
+        MatchResult() : match_len(0), match_pos(npos) {}
 
-        MatchInfo(size_type match_len, size_type match_pos)
+        MatchResult(size_type match_len, size_type match_pos)
             : match_len(match_len), match_pos(match_pos) {}
 
-        MatchInfo(const MatchInfo & src)
+        MatchResult(const MatchResult & src)
             : match_len(src.match_len), match_pos(src.match_pos) {
         }
     };
@@ -112,14 +112,30 @@ private:
 
         PackedPair() : value(0) {}
         explicit PackedPair(std::uint16_t value) : value(value) {}
+
         PackedPair(std::uint8_t low, std::uint8_t high)
             : parts{low, high} {}
+
+        PackedPair(const MatchResult & result)
+            : value(make_pair(result)) {
+        }
 
         PackedPair(const PackedPair & src) : value(src.value) {}
 
         PackedPair & operator = (std::uint16_t rhs) {
             value = rhs;
             return *this;
+        }
+
+        static std::uint16_t make_pair(size_type match_len, size_type match_pos) {
+            return static_cast<std::uint16_t>((match_len << kWindowBits) | match_pos);
+        }
+
+        static std::uint16_t make_pair(const MatchResult & result) {
+            size_type match_len = result.match_len - kMinMatchLength;
+            assert(match_len < kMaxMatchLength);
+            assert(result.match_pos < kWindowSize);
+            return make_pair(match_len, result.match_pos);
         }
     };
 
@@ -144,7 +160,7 @@ public:
         static constexpr size_type kBlockFlagBytes = (kBlockFlagSize + kWordBytes - 1) /  kWordBytes;
 
         int err_code = 0;
-        OutputStream compressedOs(compressed_data);
+        OutputStream compressed_os(compressed_data);
 
         size_type data_len = input_data.size();
         if (ziplab_likely(data_len != 0)) {
@@ -152,7 +168,7 @@ public:
 
             jstd::bitset<kBlockFlagSize> flag_bits;
             MemoryBuffer block_data;
-            OutputStream blockDataOs(block_data);
+            OutputStream block_os(block_data);
      
             block_data.prepare(kBlockDataSize);
 
@@ -174,29 +190,27 @@ public:
                     const char * window = input_data.data() + window_start;
                     const char * lookahead = input_data.data() + block_pos;
 
-                    MatchInfo match_info = plain_find_match(window, lookahead, window_size, lookahead_size);
-
-                    if (ziplab_likely(match_info.match_len < kMinMatchLength)) {
-                        blockDataOs.writeByte(input_data[block_pos++]);
-                        blockDataOs.writeByte(input_data[block_pos++]);
+                    MatchResult match_result = plain_find_match(window, lookahead, window_size, lookahead_size);
+                    if (ziplab_likely(match_result.match_len < kMinMatchLength)) {
+                        // Literal
+                        block_os.writeByte(input_data[block_pos++]);
+                        block_os.writeByte(input_data[block_pos++]);
                     } else {
-                        size_type real_match_len = match_info.match_len - kMinMatchLength;
-                        assert(real_match_len < kMaxMatchLength);
-                        assert(match_info.match_pos < kWindowSize);
-                        PackedPair packedPair(static_cast<std::uint16_t>((real_match_len << kWindowBits) | match_info.match_pos));
-                        blockDataOs.writeByte(packedPair.parts.low);
-                        blockDataOs.writeByte(packedPair.parts.high);
+                        // Pair of (MatchPos, MatchLength)
+                        PackedPair packedPair(match_result);
+                        block_os.writeByte(packedPair.parts.low);
+                        block_os.writeByte(packedPair.parts.high);
 
-                        assert(match_info.match_pos != npos);
+                        assert(match_result.match_pos != npos);
                         flag_bits.set(block_pos);
 
-                        block_pos += match_info.match_len;
+                        block_pos += match_result.match_len;
                     }
                 }
 
-                // Output flag bits and the data buffer
-                write_flag_bits(compressedOs, flag_bits, block_capacity);
-                compressedOs.write(blockDataOs.buffer());
+                // Output flag bits and block data
+                write_flag_bits(compressed_os, flag_bits, block_capacity);
+                compressed_os.write(block_data);
 
                 flag_bits.reset();
                 block_data.clear();
@@ -244,7 +258,7 @@ private:
         return num_bytes;
     }
 
-    MatchInfo plain_find_match(const char * window, const char * lookahead,
+    MatchResult plain_find_match(const char * window, const char * lookahead,
                                size_type window_size, size_type lookahead_size) {
         assert(window != nullptr);
         assert(lookahead != nullptr);
@@ -283,7 +297,7 @@ private:
         return { best_match_len, best_offset };
     }
 
-    MatchInfo find_match(const char * window, const char * lookahead,
+    MatchResult find_match(const char * window, const char * lookahead,
                          size_type window_size, size_type lookahead_size) {
         size_type best_match_len = kMinMatchLength - 1;
         size_type best_offset = npos;
