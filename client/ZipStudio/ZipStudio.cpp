@@ -62,7 +62,8 @@ void ziplab_InputStream_test()
         buff[i] = (char)i;
     }
 
-    ziplab::InputStream inputStream(buff);
+    ziplab::MemoryBuffer memBuff(buff);
+    ziplab::InputStream inputStream(memBuff);
     //inputStream.clear();
 
     ziplab::MemoryBuffer & buffer = inputStream.buffer();
@@ -176,8 +177,12 @@ void ziplab_lzss_test()
 
     ziplab::LZSSCompressor<12, 4> lzss;
 
-    ziplab::MemoryBuffer compressed_data = lzss.plain_compress(input_data);
-    ziplab::MemoryBuffer decompressed_data = lzss.plain_decompress(compressed_data);
+    int ret_val;
+    ziplab::MemoryBuffer compressed_data;
+    ret_val = lzss.plain_compress(input_data, compressed_data);
+
+    ziplab::MemoryBuffer decompressed_data;
+    ret_val = lzss.plain_decompress(compressed_data, decompressed_data);
 
     if (compare_buffer(decompressed_data, input_data)) {
         printf("ziplab::LZSSCompressor::decompress() is PASSED.\n\n");

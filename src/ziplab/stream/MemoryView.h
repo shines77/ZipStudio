@@ -179,11 +179,11 @@ private:
     }
 };
 
+using FixedMemoryView  = BasicMemoryView< BasicFixedMemoryStorage<char, std::char_traits<char>> >;
+using WFixedMemoryView = BasicMemoryView< BasicFixedMemoryStorage<wchar_t, std::char_traits<wchar_t>> >;
+
 using MemoryView  = BasicMemoryView< BasicMemoryStorage<char, std::char_traits<char>> >;
 using WMemoryView = BasicMemoryView< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>> >;
-
-using MutableMemoryView  = BasicMemoryView< BasicMutableMemoryStorage<char, std::char_traits<char>> >;
-using WMutableMemoryView = BasicMemoryView< BasicMutableMemoryStorage<wchar_t, std::char_traits<wchar_t>> >;
 
 } // namespace ziplab
 

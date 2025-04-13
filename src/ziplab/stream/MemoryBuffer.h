@@ -163,38 +163,52 @@ public:
         if (this->data_ != nullptr) {
             delete[] this->data_;
             this->data_ = nullptr;
-            this->setCapacity(0);
+            this->set_capacity(0);
         }
     }
 
-    // Ensure reserved space of the specified size, but do not perform any data initialization,
-    // and don't keep the old data.
-    void reserve(size_type new_capacity) {
-        // If the new capacity is less than or equal to the old size, do nothing!
+    //
+    // Only ensure to reserve space for at least N elements
+    // and discards existing data, without initializing new elements.
+    //
+    void prepare(size_type new_capacity) {
+        // If new capacity is less than or equal to old size, do nothing!
         if (new_capacity > this->size()) {
-            // Allow the new capacity is 0.
+            // Allow new capacity equal to 0.
             reserve_impl<false, false>(new_capacity);
         }
     }
 
-    // Allocate a new buffer of specified size and don't keep the old data.
-    void resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
-        resize_impl<false>(new_size, fill_new, init_val);
-    }
-
-    // Ensure reserved space of the specified size, but do not perform any data initialization,
-    // and keep the old data.
-    void keep_reserve(size_type new_capacity) {
-        // If the new capacity is less than or equal to the old size, do nothing!
+    //
+    // Ensure to reserve space for at least N elements
+    // and preserving existing data, without initializing new elements.
+    //
+    void reserve(size_type new_capacity) {
+        // If new capacity is less than or equal to old size, do nothing!
         if (new_capacity > this->size()) {
-            // Allow the new capacity is 0.
+            // Allow new capacity equal to 0.
             reserve_impl<false, true>(new_capacity);
         }
     }
 
-    // Allocate a new buffer of specified size and keep the old data.
-    void keep_resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
-        resize_impl<true>(new_size, fill_new, init_val);
+    //
+    // Expand the space to at least N elements
+    // and discards existing data, initialize new elements with default values.
+    //
+    // equivalent to: clear() and resize(n).
+    //
+    // In C++ 23, similar method is void resize_and_overwrite(size_type n, F && generator).
+    //
+    void resize_discard(size_type new_size, char_type init_val = 0) {
+        resize_impl<false>(new_size, init_val);
+    }
+
+    //
+    // Expand the space to at least N elements
+    // and preserving existing data, initialize new elements with default values.
+    //
+    void resize(size_type new_size, char_type init_val = 0) {
+        resize_impl<true>(new_size, init_val);
     }
 
     void clear() {
@@ -255,14 +269,18 @@ private:
         delete[] this->data_;
     }
 
-    template <bool isInitialize, bool needReserve>
+    //
+    // Ensure to reserve space for at least N elements
+    // and (preserving / discard) existing data, without initializing new elements.
+    //
+    template <bool IsInitialize, bool NeedPreserve>
     inline void reserve_impl(size_type new_capacity) {
-        // Allow the new capacity is 0.
+        // Allow new capacity equal to 0.
         const char_type * new_data = allocate(new_capacity);
         size_type copy_size = (std::min)(new_capacity, this->size());
-        // If necessary, copy the old data to new data.
-        if (!isInitialize && this->is_valid()) {
-            if (needReserve && (copy_size > 0)) {
+        // If necessary, copy old data to new data.
+        if (!IsInitialize && this->is_valid()) {
+            if (NeedPreserve && (copy_size > 0)) {
                 assert(new_data != nullptr);
                 std::memcpy((void *)new_data, (const void *)this->data(), copy_size * sizeof(char_type));
             }
@@ -270,53 +288,49 @@ private:
         }
         this->data_ = new_data;
 #if USE_MEMORY_STORAGE
-        this->setCapacity(new_capacity);
+        this->set_capacity(new_capacity);
 #else
         this->size_ = new_capacity;
 #endif
     }
 
-    // Allocate a new buffer of specified size and keep the old data.
-    template <bool needReserve>
-    void resize_impl(size_type new_size, bool fill_new = true, char_type init_val = 0) {
-        // If the new size is equal to the old size, do nothing!
+    //
+    // Expand the space to at least N elements
+    // and (preserving / discard) existing data, initialize new elements with default values.
+    //
+    template <bool NeedPreserve>
+    void resize_impl(size_type new_size, char_type init_val = 0) {
         if (new_size != this->size()) {
-            // Allow the new size is 0.
+            // Allow new size equal to 0.
             const char_type * new_data = allocate(new_size);
             size_type copy_size;
-            if (needReserve)
+            if (NeedPreserve)
                 copy_size = (std::min)(new_size, this->size());
             else
                 copy_size = 0;
-            // If necessary, copy the old data to new data.
             if (this->is_valid()) {
-                if (needReserve && (copy_size > 0)) {
+                // If necessary, copy old data to new data.
+                if (NeedPreserve && (copy_size > 0)) {
                     assert(new_data != nullptr);
                     std::memcpy((void *)new_data, (const void *)this->data(), copy_size * sizeof(char_type));
                 }
                 deallocate();
             }
-            // If necessary, fill the remaining part with the specified default value.
-            if (fill_new && (new_size > copy_size)) {
-                size_type remain_size = new_size - copy_size;
+            // If necessary, fill remaining part with default value.
+            size_type remain_size = new_size - copy_size;
+            if (static_cast<diff_type>(remain_size) > 0) {
                 assert(new_data != nullptr);
-                assert(remain_size > 0);
+                assert(new_size > copy_size);
                 std::memset((void *)(new_data + copy_size), (int)init_val, remain_size * sizeof(char_type));
             }
             this->data_ = new_data;
 #if USE_MEMORY_STORAGE
-            this->setCapacity(new_size);
+            this->set_capacity(new_size);
 #else
             this->size_ = new_size;
 #endif
         } else {
-            // If necessary, fill the remaining part with the specified default value.
-            if (fill_new && (this->is_valid() && !this->is_empty())) {
-                assert(this->data() != nullptr);
-                assert(this->size() > 0);
-                assert(new_size == this->size());
-                std::memset((void *)this->data(), (int)init_val, this->size() * sizeof(char_type));
-            }
+            // If new size is equal to old size, do nothing!
         }
     }
 
@@ -353,9 +367,9 @@ private:
         assert(count == this->size());
     }
 
-    template <bool isInitialize>
+    template <bool IsInitialize>
     inline void assgin_and_copy_data(const char_type * src_data, size_type src_size) {
-        if (isInitialize) {
+        if (IsInitialize) {
             // It is necessary to ensure that the data is empty.
             assert(this->data() == nullptr);
             assert(this->size() == 0);
@@ -367,7 +381,7 @@ private:
             const char_type * new_data = allocate(new_size);
             this->data_ = new_data;
 #if USE_MEMORY_STORAGE
-            this->setCapacity(new_size);
+            this->set_capacity(new_size);
 #else
             this->size_ = new_size;
 #endif
@@ -375,20 +389,20 @@ private:
             if (src_size > 0) {
                 std::memcpy((void *)new_data, (const void *)src_data, src_size * sizeof(char_type));
             }
-        } else if (!isInitialize) {
+        } else if (!IsInitialize) {
             // Reset the status when it's not initializing.
             this->data_ = nullptr;
 #if USE_MEMORY_STORAGE
-            this->setCapacity(0);
+            this->set_capacity(0);
 #else
             this->size_ = 0;
 #endif
         }
     }
 
-    template <bool isInitialize, typename Container>
+    template <bool IsInitialize, typename Container>
     inline void assgin_and_copy_data_from_container(const Container & src) {
-        if (isInitialize) {
+        if (IsInitialize) {
             // It is necessary to ensure that the data is empty.
             assert(this->data() == nullptr);
             assert(this->size() == 0);
@@ -399,7 +413,7 @@ private:
         const char_type * new_data = allocate(new_size);
         this->data_ = new_data;
 #if USE_MEMORY_STORAGE
-        this->setCapacity(new_size);
+        this->set_capacity(new_size);
 #else
         this->size_ = new_size;
 #endif
@@ -469,11 +483,11 @@ inline void swap(BasicMemoryBuffer<CharT, Traits> & lhs, BasicMemoryBuffer<CharT
 
 #if USE_MEMORY_STORAGE
 
+using FixedMemoryBuffer  = BasicMemoryBuffer< BasicFixedMemoryStorage<char, std::char_traits<char>> >;
+using WFixedMemoryBuffer = BasicMemoryBuffer< BasicFixedMemoryStorage<wchar_t, std::char_traits<wchar_t>> >;
+
 using MemoryBuffer  = BasicMemoryBuffer< BasicMemoryStorage<char, std::char_traits<char>> >;
 using WMemoryBuffer = BasicMemoryBuffer< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>> >;
-
-using MutableMemoryBuffer  = BasicMemoryBuffer< BasicMutableMemoryStorage<char, std::char_traits<char>> >;
-using WMutableMemoryBuffer = BasicMemoryBuffer< BasicMutableMemoryStorage<wchar_t, std::char_traits<wchar_t>> >;
 
 #else
 

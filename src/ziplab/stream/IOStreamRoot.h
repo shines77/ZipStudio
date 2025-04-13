@@ -47,48 +47,11 @@ public:
     using vector_type = std::vector<char_type>;
 
 protected:
-    buffer_type buffer_;
-    index_type  pos_;
-    size_type   size_;
+    buffer_type & buffer_;
+    index_type    pos_;
 
 public:
-    BasicIOStreamRoot() : buffer_(), pos_(0) {
-    }
-    BasicIOStreamRoot(size_type capacity) : buffer_(capacity), pos_(0) {
-    }
-
-    BasicIOStreamRoot(const memory_buffer_t & buffer)
-        : buffer_(buffer), pos_(0) {
-    }
-    BasicIOStreamRoot(memory_buffer_t && buffer)
-        : buffer_(std::forward<memory_buffer_t>(buffer)), pos_(0) {
-    }
-
-    BasicIOStreamRoot(const char_type * data, size_type size)
-        : buffer_(data, size), pos_(0) {
-    }
-
-    template <size_type N>
-    BasicIOStreamRoot(const char_type (&data)[N])
-        : buffer_(data, N), pos_(0) {
-    }
-
-    template <size_type N>
-    BasicIOStreamRoot(const std::array<string_type, N> & strings)
-        : buffer_(strings), pos_(0) {
-    }
-
-    BasicIOStreamRoot(const string_type & src)
-        : buffer_(src), pos_(0) {
-    }
-
-    BasicIOStreamRoot(const vector_type & src)
-        : buffer_(src), pos_(0) {
-    }
-
-    template <typename Container>
-    BasicIOStreamRoot(const Container & src)
-        : buffer_(src), pos_(0) {
+    BasicIOStreamRoot(buffer_type & buffer) : buffer_(buffer), pos_(0) {
     }
 
     BasicIOStreamRoot(const BasicIOStreamRoot & src)
@@ -122,6 +85,9 @@ public:
     const memory_buffer_t & buffer() const { return buffer_; }
 
     // Position
+    char_type * current() { return (buffer_.data() + pos()); }
+    const char_type * current() const { return (buffer_.data() + pos()); }
+
     char_type * begin() { return buffer_.data(); }
     const char_type * begin() const { return buffer_.data(); }
 
@@ -130,9 +96,6 @@ public:
 
     char_type * tail() { return (buffer_.data() + buffer_.size()); }
     const char_type * tail() const { return (buffer_.data() + buffer_.size()); }
-
-    char_type * current() { return (buffer_.data() + pos()); }
-    const char_type * current() const { return (buffer_.data() + pos()); }
 
     void destroy() {
         buffer_.destroy();
@@ -143,25 +106,45 @@ public:
         pos_ = 0;
     }
 
+    //
+    // Only ensure to reserve space for at least N elements
+    // and discards existing data, without initializing new elements.
+    //
+    void prepare(size_type new_capacity) {
+        buffer_.prepare(new_capacity);
+        assert(size() <= capacity());
+        assert(pos() <= ssize());        
+    }
+
+    //
+    // Ensure to reserve space for at least N elements
+    // and preserving existing data, without initializing new elements.
+    //
     void reserve(size_type new_capacity) {
         buffer_.reserve(new_capacity);
         assert(size() <= capacity());
         assert(pos() <= ssize());
     }
 
-    void resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
-        buffer_.resize(new_size, fill_new, init_val);
+    //
+    // Expand the space to at least N elements
+    // and discards existing data, initialize new elements with default values.
+    //
+    // equivalent to: clear() and resize(n).
+    //
+    // In C++ 23, similar method is void resize_and_overwrite(size_type n, F && generator).
+    //
+    void resize_discard(size_type new_size, char_type init_val = 0) {
+        buffer_.resize_discard(new_size, init_val);
         reset();
     }
 
-    void keep_reserve(size_type new_capacity) {
-        buffer_.keep_reserve(new_capacity);
-        assert(size() <= capacity());
-        assert(pos() <= ssize());        
-    }
-
-    void keep_resize(size_type new_size, bool fill_new = true, char_type init_val = 0) {
-        buffer_.keep_resize(new_size, fill_new, init_val);
+    //
+    // Expand the space to at least N elements
+    // and preserving existing data, initialize new elements with default values.
+    //
+    void resize(size_type new_size, char_type init_val = 0) {
+        buffer_.resize(new_size, init_val);
         if (size() > capacity()) {
             size_ = capacity();
         }

@@ -21,7 +21,7 @@
 namespace ziplab {
 
 template <typename CharT, typename Traits = std::char_traits<CharT>>
-class BasicMemoryStorage {
+class BasicFixedMemoryStorage {
 public:
     using char_type     = CharT;
     using traits_type   = Traits;
@@ -37,21 +37,21 @@ protected:
     size_type         capacity_;
 
 public:
-    BasicMemoryStorage() : data_(nullptr), capacity_(0) {
+    BasicFixedMemoryStorage() : data_(nullptr), capacity_(0) {
     }
-    BasicMemoryStorage(const char_type * data, size_type size)
+    BasicFixedMemoryStorage(const char_type * data, size_type size)
         : data_(data), capacity_(size) {
     }
-    BasicMemoryStorage(const char_type * data, size_type size, size_type capacity)
+    BasicFixedMemoryStorage(const char_type * data, size_type size, size_type capacity)
         : data_(data), capacity_(capacity) {
     }
-    BasicMemoryStorage(const BasicMemoryStorage & src) :
+    BasicFixedMemoryStorage(const BasicFixedMemoryStorage & src) :
         data_(src.data()), capacity_(src.capacity()) {
     }
-    ~BasicMemoryStorage() {
+    ~BasicFixedMemoryStorage() {
     }
 
-    BasicMemoryStorage & operator = (const BasicMemoryStorage & rhs) {
+    BasicFixedMemoryStorage & operator = (const BasicFixedMemoryStorage & rhs) {
         data_ = rhs.data();
         capacity_ = rhs.capacity();
         return *this;
@@ -78,40 +78,40 @@ public:
     char_type * tail() { return (data() + capacity()); }
     const char_type * tail() const { return (data() + capacity()); }
 
-    void setData(const char_type * data) {
+    void set_data(const char_type * data) {
         data_ = data;
     }
 
-    void setSize(size_type size) {
+    void set_size(size_type size) {
         capacity_ = size;
     }
 
-    void setCapacity(size_type capacity) {
+    void set_capacity(size_type capacity) {
         capacity_ = capacity;
     }
 
-    void setStorage(const char_type * data, size_type size) {
+    void set_storage(const char_type * data, size_type size) {
         data_ = data;
         capacity_ = size;
     }
 
-    void setStorage(const char_type * data, size_type size, size_type capacity) {
+    void set_storage(const char_type * data, size_type size, size_type capacity) {
         data_ = data;
         capacity_ = capacity;
     }
 
-    void swap(BasicMemoryStorage & other) {
+    void swap(BasicFixedMemoryStorage & other) {
         if (std::addressof(other) != this) {
             swap_data(other);
         }
     }
 
-    friend inline void swap(BasicMemoryStorage & lhs, BasicMemoryStorage & rhs) {
+    friend inline void swap(BasicFixedMemoryStorage & lhs, BasicFixedMemoryStorage & rhs) {
         lhs.swap(rhs);
     }
 
 private:
-    inline void swap_data(BasicMemoryStorage & other) {
+    inline void swap_data(BasicFixedMemoryStorage & other) {
         assert(std::addressof(other) != this);
         using std::swap;
         swap(this->data_, other.data_);
@@ -120,7 +120,7 @@ private:
 };
 
 template <typename CharT, typename Traits = std::char_traits<CharT>>
-class BasicMutableMemoryStorage {
+class BasicMemoryStorage {
 public:
     using char_type     = CharT;
     using traits_type   = Traits;
@@ -137,21 +137,21 @@ protected:
     size_type         capacity_;
 
 public:
-    BasicMutableMemoryStorage() : data_(nullptr), size_(0) {
+    BasicMemoryStorage() : data_(nullptr), size_(0) {
     }
-    BasicMutableMemoryStorage(const char_type * data, size_type size)
+    BasicMemoryStorage(const char_type * data, size_type size)
         : data_(data), size_(size), capacity_(size) {
     }
-    BasicMutableMemoryStorage(const char_type * data, size_type size, size_type capacity)
+    BasicMemoryStorage(const char_type * data, size_type size, size_type capacity)
         : data_(data), size_(size), capacity_(capacity) {
     }
-    BasicMutableMemoryStorage(const BasicMutableMemoryStorage & src) :
+    BasicMemoryStorage(const BasicMemoryStorage & src) :
         data_(src.data()), size_(src.size()), capacity_(src.capacity()) {
     }
-    ~BasicMutableMemoryStorage() {
+    ~BasicMemoryStorage() {
     }
 
-    BasicMutableMemoryStorage & operator = (const BasicMutableMemoryStorage & rhs) {
+    BasicMemoryStorage & operator = (const BasicMemoryStorage & rhs) {
         data_ = rhs.data();
         size_ = rhs.size();
         capacity_ = rhs.capacity();
@@ -179,42 +179,42 @@ public:
     char_type * tail() { return (data() + capacity()); }
     const char_type * tail() const { return (data() + capacity()); }
 
-    void setData(const char_type * data) {
+    void set_data(const char_type * data) {
         data_ = data;
     }
 
-    void setSize(size_type size) {
+    void set_size(size_type size) {
         size_ = size;
     }
 
-    void setCapacity(size_type capacity) {
+    void set_capacity(size_type capacity) {
         capacity_ = capacity;
     }
 
-    void setStorage(const char_type * data, size_type size) {
+    void set_storage(const char_type * data, size_type size) {
         data_ = data;
         size_ = size;
         capacity_ = size;
     }
 
-    void setStorage(const char_type * data, size_type size, size_type capacity) {
+    void set_storage(const char_type * data, size_type size, size_type capacity) {
         data_ = data;
         size_ = size;
         capacity_ = capacity;
     }
 
-    void swap(BasicMutableMemoryStorage & other) {
+    void swap(BasicMemoryStorage & other) {
         if (std::addressof(other) != this) {
             swap_data(other);
         }
     }
 
-    friend inline void swap(BasicMutableMemoryStorage & lhs, BasicMutableMemoryStorage & rhs) {
+    friend inline void swap(BasicMemoryStorage & lhs, BasicMemoryStorage & rhs) {
         lhs.swap(rhs);
     }
 
 private:
-    inline void swap_data(BasicMutableMemoryStorage & other) {
+    inline void swap_data(BasicMemoryStorage & other) {
         assert(std::addressof(other) != this);
         using std::swap;
         swap(this->data_, other.data_);
@@ -223,25 +223,25 @@ private:
     }
 };
 
+using FixedMemoryStorage  = BasicFixedMemoryStorage<char, std::char_traits<char>>;
+using WFixedMemoryStorage = BasicFixedMemoryStorage<wchar_t, std::char_traits<wchar_t>>;
+
 using MemoryStorage  = BasicMemoryStorage<char, std::char_traits<char>>;
 using WMemoryStorage = BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>>;
-
-using MutableMemoryStorage  = BasicMutableMemoryStorage<char, std::char_traits<char>>;
-using WMutableMemoryStorage = BasicMutableMemoryStorage<wchar_t, std::char_traits<wchar_t>>;
 
 } // namespace ziplab
 
 namespace std {
 
 template <typename CharT, typename Traits = std::char_traits<CharT>>
-inline void swap(ziplab::BasicMemoryStorage<CharT, Traits> & lhs,
-                 ziplab::BasicMemoryStorage<CharT, Traits> & rhs) {
+inline void swap(ziplab::BasicFixedMemoryStorage<CharT, Traits> & lhs,
+                 ziplab::BasicFixedMemoryStorage<CharT, Traits> & rhs) {
     lhs.swap(rhs);
 }
 
 template <typename CharT, typename Traits = std::char_traits<CharT>>
-inline void swap(ziplab::BasicMutableMemoryStorage<CharT, Traits> & lhs,
-                 ziplab::BasicMutableMemoryStorage<CharT, Traits> & rhs) {
+inline void swap(ziplab::BasicMemoryStorage<CharT, Traits> & lhs,
+                 ziplab::BasicMemoryStorage<CharT, Traits> & rhs) {
     lhs.swap(rhs);
 }
 

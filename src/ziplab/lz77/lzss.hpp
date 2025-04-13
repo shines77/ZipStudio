@@ -137,22 +137,24 @@ public:
     }
 
     // Compress data
-    MemoryBuffer plain_compress(const std::string & input_data) {
-        static constexpr size_type kWordLen = sizeof(size_type);
-        static constexpr size_type kMaxFlag = static_cast<size_type>(1) << (kWordLen - 1);
+    int plain_compress(const std::string & input_data, MemoryBuffer & compressed_data) {
+        static constexpr size_type kWordBytes = sizeof(size_type);
+        static constexpr size_type kWordBits = kWordBytes * CHAR_BIT;
+        static constexpr size_type kMaxFlag = static_cast<size_type>(1) << (kWordBits - 1);
+        static constexpr size_type kBlockFlagBytes = (kBlockFlagSize + kWordBytes - 1) /  kWordBytes;
 
-        OutputStream compressed;
+        int err_code = 0;
+        OutputStream compressedOs(compressed_data);
+
         size_type data_len = input_data.size();
         if (ziplab_likely(data_len != 0)) {
             //LZDictHashmap<offset_type, WindowBits> L1_hashmap;
 
             jstd::bitset<kBlockFlagSize> flag_bits;
-            OutputStream block_data;
-
-            //flag_bits.reset();       
-            block_data.reserve(kBlockDataSize);
-
-            static constexpr size_type kBlockFlagLen = (kBlockFlagSize + kWordLen - 1) /  kWordLen;
+            MemoryBuffer block_data;
+            OutputStream blockDataOs(block_data);
+     
+            block_data.prepare(kBlockDataSize);
 
             size_type pos = 0;
             assert(data_len > 0);
@@ -175,15 +177,15 @@ public:
                     MatchInfo match_info = plain_find_match(window, lookahead, window_size, lookahead_size);
 
                     if (ziplab_likely(match_info.match_len < kMinMatchLength)) {
-                        block_data.writeByte(input_data[block_pos++]);
-                        block_data.writeByte(input_data[block_pos++]);
+                        blockDataOs.writeByte(input_data[block_pos++]);
+                        blockDataOs.writeByte(input_data[block_pos++]);
                     } else {
                         size_type real_match_len = match_info.match_len - kMinMatchLength;
                         assert(real_match_len < kMaxMatchLength);
                         assert(match_info.match_pos < kWindowSize);
                         PackedPair packedPair(static_cast<std::uint16_t>((real_match_len << kWindowBits) | match_info.match_pos));
-                        block_data.writeByte(packedPair.parts.low);
-                        block_data.writeByte(packedPair.parts.high);
+                        blockDataOs.writeByte(packedPair.parts.low);
+                        blockDataOs.writeByte(packedPair.parts.high);
 
                         assert(match_info.match_pos != npos);
                         flag_bits.set(block_pos);
@@ -193,8 +195,8 @@ public:
                 }
 
                 // Output flag bits and the data buffer
-                write_flag_bits(compressed, flag_bits, block_capacity);
-                compressed.write(block_data);
+                write_flag_bits(compressedOs, flag_bits, block_capacity);
+                compressedOs.write(blockDataOs.buffer());
 
                 flag_bits.reset();
                 block_data.clear();
@@ -203,16 +205,17 @@ public:
             } while (pos < data_len);
         }
 
-        return compressed.buffer();
+        return err_code;
     }
 
     // Decompress data
-    MemoryBuffer plain_decompress(const MemoryBuffer & compressed_data) {
-        OutputStream decompressed;
+    int plain_decompress(const MemoryBuffer & compressed_data, MemoryBuffer & decompressed_data) {
+        int err_code = 0;
 
+        OutputStream decompressed(decompressed_data);
         ZIPLAB_UNUSED(compressed_data);
 
-        return decompressed.buffer();
+        return err_code;
     }
 
     // Compress file
@@ -226,17 +229,17 @@ public:
     }
 
 private:
-    inline size_type write_flag_bits(OutputStream & compressed,
+    inline size_type write_flag_bits(OutputStream & compressedOs,
                                      const jstd::bitset<kBlockFlagSize> & flag_bits,
                                      size_type flag_capacity) {
         assert(flag_capacity <= kBlockFlagSize);
         size_type num_bytes = (flag_capacity + (CHAR_BIT - 1)) / CHAR_BIT;
 
         // Allocate the size of data to be added in advance
-        compressed.reserve(compressed.size() + num_bytes);
+        compressedOs.reserve(compressedOs.size() + num_bytes);
 
         //assert(num_bytes == flag_bits.bytes());
-        compressed.write(flag_bits.data(), num_bytes);
+        compressedOs.write(flag_bits.data(), num_bytes);
 
         return num_bytes;
     }

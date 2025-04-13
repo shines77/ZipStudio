@@ -54,43 +54,7 @@ private:
     index_type pos_;
 
 public:
-    BasicOutputStream() : super_type(), pos_(0) {
-    }
-    BasicOutputStream(size_type capacity) : super_type(capacity), pos_(0) {
-    }
-
-    BasicOutputStream(const memory_buffer_t & buffer)
-        : super_type(buffer), pos_(0) {
-    }
-    BasicOutputStream(memory_buffer_t && buffer)
-        : super_type(std::forward<memory_buffer_t>(buffer)), pos_(0) {
-    }
-
-    BasicOutputStream(const char_type * data, size_type size)
-        : super_type(data, size), pos_(0) {
-    }
-
-    template <size_type N>
-    BasicOutputStream(const char_type (&data)[N])
-        : super_type(data, N), pos_(0) {
-    }
-
-    template <size_type N>
-    BasicOutputStream(const std::array<string_type, N> & strings)
-        : super_type(strings), pos_(0) {
-    }
-
-    BasicOutputStream(const string_type & src)
-        : super_type(src), pos_(0) {
-    }
-
-    BasicOutputStream(const vector_type & src)
-        : super_type(src), pos_(0) {
-    }
-
-    template <typename Container>
-    BasicOutputStream(const Container & src)
-        : super_type(src), pos_(0) {
+    BasicOutputStream(buffer_type & buffer) : super_type(buffer), pos_(0) {
     }
 
     BasicOutputStream(const BasicOutputStream & src)
