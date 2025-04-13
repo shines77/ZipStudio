@@ -331,6 +331,7 @@ public:
             val = *(reinterpret_cast<T *>(this->buffer_.data() + pos_));
             return true;
         } else {
+            val = T();
             return false;
         }
     }
@@ -549,6 +550,7 @@ public:
             pos_ += step;
             return true;
         } else {
+            val = T();
             return false;
         }
     }

@@ -182,9 +182,11 @@ void ziplab_lzss_test()
     ret_val = lzss.plain_compress(input_data, compressed_data);
 
     ziplab::MemoryBuffer decompressed_data;
-    ret_val = lzss.plain_decompress(compressed_data, decompressed_data);
+    if (ret_val == 0) {
+        ret_val = lzss.plain_decompress(compressed_data, decompressed_data);
+    }
 
-    if (compare_buffer(decompressed_data, input_data)) {
+    if ((ret_val == 0) && compare_buffer(decompressed_data, input_data)) {
         printf("ziplab::LZSSCompressor::decompress() is PASSED.\n\n");
     } else {
         printf("ziplab::LZSSCompressor::decompress() is FAILED.\n\n");
