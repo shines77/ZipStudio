@@ -145,9 +145,6 @@ public:
     //
     void resize(size_type new_size, char_type init_val = 0) {
         buffer_.resize(new_size, init_val);
-        if (size() > capacity()) {
-            size_ = capacity();
-        }
         if (pos() > ssize()) {
             pos_ = ssize();
         }
