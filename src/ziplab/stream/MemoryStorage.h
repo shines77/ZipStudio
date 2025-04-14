@@ -21,105 +21,6 @@
 namespace ziplab {
 
 template <typename CharT, typename Traits = std::char_traits<CharT>>
-class BasicFixedMemoryStorage {
-public:
-    using char_type     = CharT;
-    using traits_type   = Traits;
-
-    using size_type     = std::size_t;
-    using diff_type     = std::ptrdiff_t;
-    using index_type    = std::streamsize;
-
-protected:
-    // Why mayebe change the order of member variables data and size,
-    // because it is for higher efficiency in the input and output streams.
-    const char_type * data_;
-    size_type         capacity_;
-
-public:
-    BasicFixedMemoryStorage() : data_(nullptr), capacity_(0) {
-    }
-    BasicFixedMemoryStorage(const char_type * data, size_type size)
-        : data_(data), capacity_(size) {
-    }
-    BasicFixedMemoryStorage(const char_type * data, size_type size, size_type capacity)
-        : data_(data), capacity_(capacity) {
-    }
-    BasicFixedMemoryStorage(const BasicFixedMemoryStorage & src) :
-        data_(src.data()), capacity_(src.capacity()) {
-    }
-    ~BasicFixedMemoryStorage() {
-    }
-
-    BasicFixedMemoryStorage & operator = (const BasicFixedMemoryStorage & rhs) {
-        data_ = rhs.data();
-        capacity_ = rhs.capacity();
-        return *this;
-    }
-
-    bool is_valid() const { return (data() != nullptr); }
-    bool is_empty() const { return (size() == 0); }
-
-    char_type * data() { return const_cast<char_type *>(data_); }
-    const char_type * data() const { return data_; }
-
-    size_type size() const { return capacity_; }
-    size_type capacity() const { return capacity_; }
-
-    index_type ssize() const { return static_cast<index_type>(capacity_); }
-    index_type scapacity() const { return static_cast<index_type>(capacity_); }
-
-    char_type * begin() { return data(); }
-    const char_type * begin() const { return data(); }
-
-    char_type * end() { return (data() + size()); }
-    const char_type * end() const { return (data() + size()); }
-
-    char_type * tail() { return (data() + capacity()); }
-    const char_type * tail() const { return (data() + capacity()); }
-
-    void set_data(const char_type * data) {
-        data_ = data;
-    }
-
-    void set_size(size_type size) {
-        capacity_ = size;
-    }
-
-    void set_capacity(size_type capacity) {
-        capacity_ = capacity;
-    }
-
-    void set_storage(const char_type * data, size_type size) {
-        data_ = data;
-        capacity_ = size;
-    }
-
-    void set_storage(const char_type * data, size_type size, size_type capacity) {
-        data_ = data;
-        capacity_ = capacity;
-    }
-
-    void swap(BasicFixedMemoryStorage & other) {
-        if (std::addressof(other) != this) {
-            swap_data(other);
-        }
-    }
-
-    friend inline void swap(BasicFixedMemoryStorage & lhs, BasicFixedMemoryStorage & rhs) {
-        lhs.swap(rhs);
-    }
-
-private:
-    inline void swap_data(BasicFixedMemoryStorage & other) {
-        assert(std::addressof(other) != this);
-        using std::swap;
-        swap(this->data_, other.data_);
-        swap(this->capacity_, other.capacity_);
-    }
-};
-
-template <typename CharT, typename Traits = std::char_traits<CharT>>
 class BasicMemoryStorage {
 public:
     using char_type     = CharT;
@@ -128,6 +29,8 @@ public:
     using size_type     = std::size_t;
     using diff_type     = std::ptrdiff_t;
     using index_type    = std::streamsize;
+
+    static constexpr bool kIsFixedStorage = false;
 
 protected:
     // Why mayebe change the order of member variables data and size,
@@ -223,21 +126,12 @@ private:
     }
 };
 
-using FixedMemoryStorage  = BasicFixedMemoryStorage<char, std::char_traits<char>>;
-using WFixedMemoryStorage = BasicFixedMemoryStorage<wchar_t, std::char_traits<wchar_t>>;
-
 using MemoryStorage  = BasicMemoryStorage<char, std::char_traits<char>>;
 using WMemoryStorage = BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>>;
 
 } // namespace ziplab
 
 namespace std {
-
-template <typename CharT, typename Traits = std::char_traits<CharT>>
-inline void swap(ziplab::BasicFixedMemoryStorage<CharT, Traits> & lhs,
-                 ziplab::BasicFixedMemoryStorage<CharT, Traits> & rhs) {
-    lhs.swap(rhs);
-}
 
 template <typename CharT, typename Traits = std::char_traits<CharT>>
 inline void swap(ziplab::BasicMemoryStorage<CharT, Traits> & lhs,

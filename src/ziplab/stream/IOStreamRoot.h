@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <type_traits>  // For std::forward<T>()
 #include <fstream>
 #include <sstream>
 
@@ -27,6 +28,8 @@ public:
     using buffer_type   = MemoryBufferT;
     using char_type     = CharT;
     using traits_type   = Traits;
+
+    using this_type = BasicIOStreamRoot<buffer_type, char_type, traits_type>;
 
 #if USE_MEMORY_STORAGE
     using memory_buffer_t = BasicMemoryBuffer< BasicMemoryStorage<char_type, traits_type> >;
@@ -191,14 +194,25 @@ public:
         return ((pos() + sizeof(val)) > ssize());
     }
 
-    index_type rewind(offset_type offset) {
-        pos_ -= static_cast<index_type>(offset);
-        return pos_;
+    // Cursor
+    this_type & backward(size_type step) {
+        pos_ -= static_cast<index_type>(step);
+        return *this;
     }
 
-    index_type skip(offset_type offset) {
+    this_type & forward(size_type step) {
+        pos_ += static_cast<index_type>(step);
+        return *this;
+    }
+
+    this_type & rewind(offset_type offset) {
+        pos_ -= static_cast<index_type>(offset);
+        return *this;
+    }
+
+    this_type & skip(offset_type offset) {
         pos_ += static_cast<index_type>(offset);
-        return pos_;
+        return *this;
     }
 
     void seek_to_begin() {

@@ -20,14 +20,14 @@
 namespace ziplab {
 
 // Forward declaration
-template <typename MemoryStorageT>
+template <typename CharT, typename Traits>
 class BasicMemoryView;
 
 #if USE_MEMORY_STORAGE
-template <typename MemoryStorageT>
+template <typename MemoryStorageT, bool IsMutable = true>
 class BasicMemoryBuffer : public MemoryStorageT
 #else
-template <typename CharT, typename Traits = std::char_traits<CharT>>
+template <typename CharT, bool IsMutable = true, typename Traits = std::char_traits<CharT>>
 class BasicMemoryBuffer
 #endif
 {
@@ -44,7 +44,7 @@ public:
     using index_type    = typename super_type::index_type;
 
     using this_type     = BasicMemoryBuffer<memory_storage_t>;
-    using memory_view_t = BasicMemoryView<memory_storage_t>;
+    using memory_view_t = BasicMemoryView<char_type, traits_type>;
 #else
     using char_type     = CharT;
     using traits_type   = Traits;
@@ -64,12 +64,15 @@ public:
     using string_type = std::basic_string<char_type, traits_type>;
     using vector_type = std::vector<char_type>;
 
+    static constexpr bool kIsMutable = IsMutable;
+
 private:
 #if !defined(USE_MEMORY_STORAGE) || (USE_MEMORY_STORAGE == 0)
     // It's allowed that when the data pointer is non-zero, the data size is zero.
 
     // Why change the order of member variables data and size,
     // because it is for higher efficiency in the input and output streams.
+    size_type         capacity_;
     size_type         size_;
     const char_type * data_;
 #endif
@@ -79,7 +82,7 @@ public:
     BasicMemoryBuffer() : super_type() {
     }
 #else
-    BasicMemoryBuffer() : size_(0), data_(nullptr) {
+    BasicMemoryBuffer() : capacity_(0), size_(0), data_(nullptr) {
     }
 #endif // USE_MEMORY_STORAGE
 
@@ -142,6 +145,8 @@ public:
     }
 #endif
 
+    bool is_fixed() const { return !kIsMutable; }
+
 #if !defined(USE_MEMORY_STORAGE) || (USE_MEMORY_STORAGE == 0)
     bool is_valid() const { return (data() != nullptr); }
     bool is_empty() const { return (size() == 0); }
@@ -159,11 +164,24 @@ public:
     const char_type * end() const { return (data() + size()); }
 #endif
 
+#if !defined(USE_MEMORY_STORAGE) || (USE_MEMORY_STORAGE == 0)
+    void set_size(size_type new_size) {
+        size_ = new_size;
+    }
+
+    void set_capacity(size_type new_capacity) {
+        //capacity_ = new_capacity;
+    }
+#endif
+
     void destroy() {
         if (this->data_ != nullptr) {
             delete[] this->data_;
             this->data_ = nullptr;
-            this->set_capacity(0);
+            this->set_size(0);
+            if (!this->is_fixed()) {
+                this->set_capacity(0);
+            }
         }
     }
 
@@ -287,11 +305,7 @@ private:
             deallocate();
         }
         this->data_ = new_data;
-#if USE_MEMORY_STORAGE
         this->set_capacity(new_capacity);
-#else
-        this->size_ = new_capacity;
-#endif
     }
 
     //
@@ -324,11 +338,7 @@ private:
                 std::memset((void *)(new_data + copy_size), (int)init_val, remain_size * sizeof(char_type));
             }
             this->data_ = new_data;
-#if USE_MEMORY_STORAGE
             this->set_capacity(new_size);
-#else
-            this->size_ = new_size;
-#endif
         } else {
             // If new size is equal to old size, do nothing!
         }
@@ -380,11 +390,7 @@ private:
             size_type new_size = src_size;
             const char_type * new_data = allocate(new_size);
             this->data_ = new_data;
-#if USE_MEMORY_STORAGE
             this->set_capacity(new_size);
-#else
-            this->size_ = new_size;
-#endif
 
             if (src_size > 0) {
                 std::memcpy((void *)new_data, (const void *)src_data, src_size * sizeof(char_type));
@@ -392,11 +398,7 @@ private:
         } else if (!IsInitialize) {
             // Reset the status when it's not initializing.
             this->data_ = nullptr;
-#if USE_MEMORY_STORAGE
             this->set_capacity(0);
-#else
-            this->size_ = 0;
-#endif
         }
     }
 
@@ -412,11 +414,7 @@ private:
         size_type new_size = src.size();
         const char_type * new_data = allocate(new_size);
         this->data_ = new_data;
-#if USE_MEMORY_STORAGE
         this->set_capacity(new_size);
-#else
-        this->size_ = new_size;
-#endif
 
         // If the source vector is not empty, then copy the data.
         copy_data_from_container(src);
@@ -462,7 +460,7 @@ private:
         }
     }
 
-    inline void swap_data(BasicMemoryBuffer & other) {
+    inline void swap_data(this_type & other) {
         assert(std::addressof(other) != this);
         using std::swap;
 #if USE_MEMORY_STORAGE
@@ -483,16 +481,19 @@ inline void swap(BasicMemoryBuffer<CharT, Traits> & lhs, BasicMemoryBuffer<CharT
 
 #if USE_MEMORY_STORAGE
 
-using FixedMemoryBuffer  = BasicMemoryBuffer< BasicFixedMemoryStorage<char, std::char_traits<char>> >;
-using WFixedMemoryBuffer = BasicMemoryBuffer< BasicFixedMemoryStorage<wchar_t, std::char_traits<wchar_t>> >;
+using MemoryBuffer  = BasicMemoryBuffer< BasicMemoryStorage<char, std::char_traits<char>>, true >;
+using WMemoryBuffer = BasicMemoryBuffer< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>>, true >;
 
-using MemoryBuffer  = BasicMemoryBuffer< BasicMemoryStorage<char, std::char_traits<char>> >;
-using WMemoryBuffer = BasicMemoryBuffer< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>> >;
+using FixedMemoryBuffer  = BasicMemoryBuffer< BasicMemoryStorage<char, std::char_traits<char>>, false >;
+using WFixedMemoryBuffer = BasicMemoryBuffer< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>>, false >;
 
 #else
 
-using MemoryBuffer  = BasicMemoryBuffer<char, std::char_traits<char>>;
-using WMemoryBuffer = BasicMemoryBuffer<wchar_t, std::char_traits<wchar_t>>;
+using MemoryBuffer  = BasicMemoryBuffer<char, true, std::char_traits<char>>;
+using WMemoryBuffer = BasicMemoryBuffer<wchar_t, true, std::char_traits<wchar_t>>;
+
+using MemoryBuffer  = BasicMemoryBuffer<char, false, std::char_traits<char>>;
+using WMemoryBuffer = BasicMemoryBuffer<wchar_t, false, std::char_traits<wchar_t>>;
 
 #endif // USE_MEMORY_STORAGE
 
@@ -502,17 +503,17 @@ namespace std {
 
 #if USE_MEMORY_STORAGE
 
-template <typename MemoryStorageT>
-inline void swap(ziplab::BasicMemoryBuffer<MemoryStorageT> & lhs,
-                 ziplab::BasicMemoryBuffer<MemoryStorageT> & rhs) {
+template <typename MemoryStorageT, bool IsMutable>
+inline void swap(ziplab::BasicMemoryBuffer<MemoryStorageT, IsMutable> & lhs,
+                 ziplab::BasicMemoryBuffer<MemoryStorageT, IsMutable> & rhs) {
     lhs.swap(rhs);
 }
 
 #else
 
-template <typename CharT, typename Traits = std::char_traits<CharT>>
-inline void swap(ziplab::BasicMemoryBuffer<CharT, Traits> & lhs,
-                 ziplab::BasicMemoryBuffer<CharT, Traits> & rhs) {
+template <typename CharT, bool IsMutable, typename Traits = std::char_traits<CharT>>
+inline void swap(ziplab::BasicMemoryBuffer<CharT, IsMutable, Traits> & lhs,
+                 ziplab::BasicMemoryBuffer<CharT, IsMutable, Traits> & rhs) {
     lhs.swap(rhs);
 }
 

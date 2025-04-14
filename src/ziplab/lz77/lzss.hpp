@@ -127,15 +127,15 @@ private:
             return *this;
         }
 
-        static std::uint16_t make_pair(size_type match_len, size_type match_pos) {
-            return static_cast<std::uint16_t>((match_len << kWindowBits) | match_pos);
-        }
-
         static std::uint16_t make_pair(const MatchResult & result) {
             size_type match_len = result.match_len - kMinMatchLength;
             assert(match_len < kMaxMatchLength);
             assert(result.match_pos < kWindowSize);
             return make_pair(match_len, result.match_pos);
+        }
+
+        static std::uint16_t make_pair(size_type match_len, size_type match_pos) {
+            return static_cast<std::uint16_t>((match_len << kWindowBits) | match_pos);
         }
     };
 
@@ -196,7 +196,7 @@ public:
                         block_os.writeByte(input_data[block_pos++]);
                         block_os.writeByte(input_data[block_pos++]);
                     } else {
-                        // Pair of (MatchPos, MatchLength)
+                        // A pair of (MatchPos, MatchLength) - [distance, length]
                         PackedPair packedPair(match_result);
                         block_os.writeByte(packedPair.parts.low);
                         block_os.writeByte(packedPair.parts.high);

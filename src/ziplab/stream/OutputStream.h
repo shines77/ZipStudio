@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <type_traits>  // For std::forward<T>()
 #include <fstream>
 #include <sstream>
 
@@ -51,18 +52,17 @@ public:
     using vector_type = std::vector<char_type>;
 
 private:
-    index_type pos_;
+    //
 
 public:
-    BasicOutputStream(buffer_type & buffer) : super_type(buffer), pos_(0) {
+    BasicOutputStream(buffer_type & buffer) : super_type(buffer) {
     }
 
     BasicOutputStream(const BasicOutputStream & src)
-        : super_type(src.buffer()), pos_(src.pos()) {
+        : super_type(src.super()) {
     }
     BasicOutputStream(BasicOutputStream && src)
-        : super_type(std::forward<memory_buffer_t>(src.buffer())),
-          pos_(src.pos()) {
+        : super_type(std::forward<super_type>(src.super())) {
     }
 
     ~BasicOutputStream() {
@@ -103,16 +103,23 @@ public:
         lhs.swap(rhs);
     }
 
+    inline void unsafeWrite(const char_type * data, size_type size) {
+        index_type s_size = static_cast<index_type>(size);
+        assert((this->pos() + s_size) <= this->ssize());
+#if 1
+        char_type * curr = this->current();
+        traits_type::copy(curr, data, size);
+#else
+        char_type * curr = this->current();
+        std::memcpy((void *)curr, (const void *)data, size * sizeof(char_type));
+#endif
+        this->forward(size);
+    }
+
     bool write(const char_type * data, size_type size) {
         index_type s_size = static_cast<index_type>(size);
-        if ((pos_ + s_size) <= this->ssize()) {
-            char_type * current = this->buffer_.data() + pos_;
-#if 0
-            std::memcpy((void *)current, (const void *)data, size * sizeof(char_type));
-#else
-            traits_type::copy(current, data, size);
-#endif
-            pos_ += s_size;
+        if ((this->pos() + s_size) <= this->ssize()) {
+            unsafeWrite(data, size);
             return true;
         } else {
             return false;
@@ -136,15 +143,130 @@ public:
         return write(out.data(), out.size());
     }
 
+    // Unsafe write value
+    template <typename T>
+    void unsafeWriteValue(const T & val) {
+        using value_type = typename std::remove_reference<T>::type;
+        static constexpr index_type step = sizeof(value_type);
+        assert(this->pos() >= 0);
+        assert((this->pos() + step) <= this->ssize());
+
+        char_type * curr = this->current();
+        *(reinterpret_cast<value_type *>(curr)) = val;
+        this->forward(step);
+    }
+
+    template <typename T>
+    void unsafeWriteValue(T && val) {
+        using value_type = typename std::remove_reference<T>::type;
+        static constexpr index_type step = sizeof(value_type);
+        assert(this->pos() >= 0);
+        assert((this->pos() + step) <= this->ssize());
+
+        char_type * curr = this->current();
+        *(reinterpret_cast<value_type *>(curr)) = std::forward<T>(val);
+        this->forward(step);
+    }
+
+    void unsafeWriteBool(std::uint8_t byte) {
+        unsafeWriteValue(byte);
+    }
+
+    void unsafeWriteChar(char ch) {
+        unsafeWriteValue(ch);
+    }
+
+    void unsafeWriteUChar(unsigned char ch) {
+        unsafeWriteValue(ch);
+    }
+
+    void unsafeWriteWChar(wchar_t ch) {
+        unsafeWriteValue(ch);
+    }
+
+    void unsafeWriteSByte(std::int8_t sbyte) {
+        unsafeWriteValue(sbyte);
+
+    }
+
+    void unsafeWriteByte(std::uint8_t byte) {
+        unsafeWriteValue(byte);
+    }
+
+    void unsafeWriteInt8(std::int8_t val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteUInt8(std::uint8_t val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteInt16(std::int16_t val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteUInt16(std::uint16_t val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteInt32(std::int32_t val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteUInt32(std::uint32_t val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteInt64(std::int64_t val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteUInt64(std::uint64_t val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteSizeT(std::size_t val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteFloat(float val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteDouble(double val) {
+        unsafeWriteValue(val);
+    }
+
+    void unsafeWriteVoidPtr(void * pt) {
+        unsafeWriteValue(pt);
+    }
+
+    template <typename T>
+    void unsafeWritePtr(T * pt) {
+        unsafeWriteValue(pt);
+    }
+
     // Safety write value
     template <typename T>
-    bool writeValue(T & val) {
-        static constexpr index_type step = sizeof(T);
+    bool writeValue(const T & val) {
+        using value_type = typename std::remove_reference<T>::type;
+        static constexpr index_type step = sizeof(value_type);
         assert(this->pos() >= 0);
-        if ((pos_ + step) <= this->ssize()) {
-            char_type * current = this->buffer_.data() + pos_;
-            *(reinterpret_cast<T *>(current)) = val;
-            pos_ += step;
+        if ((this->pos() + step) <= this->ssize()) {
+            unsafeWriteValue(val);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    template <typename T>
+    bool writeValue(T && val) {
+        using value_type = typename std::remove_reference<T>::type;
+        static constexpr index_type step = sizeof(value_type);
+        assert(this->pos() >= 0);
+        if ((this->pos() + step) <= this->ssize()) {
+            unsafeWriteValue(std::forward<T>(val));
             return true;
         } else {
             return false;
@@ -229,95 +351,6 @@ public:
     template <typename T>
     bool writePtr(T * pt) {
         return writeValue(pt);
-    }
-
-    // Unsafe write value
-    template <typename T>
-    void unsafeWriteValue(T & val) {
-        static constexpr index_type step = sizeof(T);
-        assert(this->pos() >= 0);
-        assert((pos_ + step) <= this->ssize());
-        char_type * current = this->buffer_.data() + pos_;
-        *(reinterpret_cast<T *>(current)) = val;
-        pos_ += step;
-    }
-
-    void unsafeWriteBool(std::uint8_t byte) {
-        unsafeWriteValue(byte);
-    }
-
-    void unsafeWriteChar(char ch) {
-        unsafeWriteValue(ch);
-    }
-
-    void unsafeWriteUChar(unsigned char ch) {
-        unsafeWriteValue(ch);
-    }
-
-    void unsafeWriteWChar(wchar_t ch) {
-        unsafeWriteValue(ch);
-    }
-
-    void unsafeWriteSByte(std::int8_t sbyte) {
-        unsafeWriteValue(sbyte);
-
-    }
-
-    void unsafeWriteByte(std::uint8_t byte) {
-        unsafeWriteValue(byte);
-    }
-
-    void unsafeWriteInt8(std::int8_t val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteUInt8(std::uint8_t val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteInt16(std::int16_t val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteUInt16(std::uint16_t val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteInt32(std::int32_t val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteUInt32(std::uint32_t val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteInt64(std::int64_t val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteUInt64(std::uint64_t val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteSizeT(std::size_t val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteFloat(float val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteDouble(double val) {
-        unsafeWriteValue(val);
-    }
-
-    void unsafeWriteVoidPtr(void * pt) {
-        unsafeWriteValue(pt);
-    }
-
-    template <typename T>
-    void unsafeWritePtr(T * pt) {
-        unsafeWriteValue(pt);
     }
 
 protected:
