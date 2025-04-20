@@ -121,7 +121,7 @@ public:
     void prepare(size_type new_capacity) {
         buffer_.prepare(new_capacity);
         assert(size() <= capacity());
-        assert(pos() <= ssize());        
+        assert(pos() <= ssize());
     }
 
     //
@@ -138,9 +138,8 @@ public:
     // Expand space for delta_size elements
     // and preserving existing data, without initializing new elements.
     //
-    void grow(size_type delta_size) {
-        size_type new_size = this->size() + delta_size;
-        this->reserve(new_size)
+    bool grow(size_type delta_size) {
+        return buffer_.grow(delta_size);
     }
 
     //

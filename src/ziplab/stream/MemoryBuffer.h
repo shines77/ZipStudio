@@ -15,6 +15,7 @@
 #include <limits>   // For std::min(), std::max()
 
 #include "ziplab/basic/stddef.h"
+#include "ziplab/jstd/bits/Power2.hpp"
 #include "ziplab/stream/MemoryStorage.h"
 
 namespace ziplab {
@@ -145,7 +146,7 @@ public:
     }
 #endif
 
-    bool is_fixed() const { return !kIsMutable; }
+    constexpr bool is_fixed() const { return !kIsMutable; }
 
 #if !defined(USE_MEMORY_STORAGE) || (USE_MEMORY_STORAGE == 0)
     bool is_valid() const { return (data() != nullptr); }
@@ -195,6 +196,16 @@ public:
             // Allow new capacity equal to 0.
             reserve_impl<false, false>(new_capacity);
         }
+    }
+
+    //
+    // Expand space for delta_size elements
+    // and preserving existing data, without initializing new elements.
+    //
+    bool grow(size_type delta_size) {
+        size_type new_size = this->size() + delta_size;
+        reserve(new_size);
+        return true;
     }
 
     //
@@ -274,15 +285,11 @@ public:
     }
 
 private:
-    static inline size_type round_to_pow2() {
-        //
-    }
-
     // Normalize capacity size, allowing a capacity of 0.
     static inline size_type round_capacity(size_type capacity) {
         // If not a power of two
         if ((capacity & (capacity - 1)) != 0) {
-            capacity = round_to_pow2(capacity);
+            capacity = Power2::round_up(capacity);
         }
         return capacity;
     }
@@ -306,8 +313,10 @@ private:
     //
     template <bool IsInitialize, bool NeedPreserve>
     inline void reserve_impl(size_type new_capacity) {
-        // Normalize capacity size, allowing a capacity of 0.
-        new_capacity = round_capacity(new_capacity);
+        if (!this->is_fixed()) {
+            // Normalize capacity size, allowing a capacity of 0.
+            new_capacity = round_capacity(new_capacity);
+        }
 
         const char_type * new_data = allocate(new_capacity);
         size_type copy_size = (std::min)(new_capacity, this->size());

@@ -11,7 +11,7 @@
 #include <assert.h>
 
 #include "ziplab/basic/stddef.h"
-#include "ziplab/jstd/bits/bits.hpp"
+#include "ziplab/jstd/bits/Bits.hpp"
 
 namespace jstd {
 namespace Power2 {

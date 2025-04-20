@@ -212,7 +212,7 @@ public:
                 size_type flag_capacity = 0;
                 if (compressed_os.grow(flag_capacity + block_capacity)) {
                     output_flag_bits(compressed_os, flag_bits, block_capacity);
-                    compressed_os.write(block_data);
+                    compressed_os.unsafeWrite(block_data);
                 }
 
                 flag_bits.reset();
