@@ -289,7 +289,6 @@ uint32_t popcnt(size_t n)
 
 ///////////////////////////////////////////////////////////////////
 
-
 static inline
 uint32_t __internal_ctz(uint32_t n)
 {
@@ -313,6 +312,8 @@ uint32_t __internal_clzll(uint64_t n)
 {
     return 0;
 }
+
+///////////////////////////////////////////////////////////////////
 
 static inline
 uint32_t bsf32(uint32_t n)

@@ -13,7 +13,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "ziplab/jstd/bitset.h"
+#include "ziplab/jstd/bits/bitset.h"
 #include "ziplab/lz77/lz77.hpp"
 #include "ziplab/lz77/lzDictHashmap.hpp"
 
@@ -169,7 +169,7 @@ public:
             jstd::bitset<kBlockFlagSize> flag_bits;
             MemoryBuffer block_data;
             OutputStream block_os(block_data);
-     
+
             block_data.prepare(kBlockDataSize);
 
             size_type pos = 0;
