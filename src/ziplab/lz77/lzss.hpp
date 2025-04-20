@@ -13,7 +13,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "ziplab/jstd/bits/bitset.h"
+#include "ziplab/jstd/bitset.hpp"
 #include "ziplab/lz77/lz77.hpp"
 #include "ziplab/lz77/lzDictHashmap.hpp"
 
