@@ -289,7 +289,7 @@ private:
     static inline size_type round_capacity(size_type capacity) {
         // If not a power of two
         if ((capacity & (capacity - 1)) != 0) {
-            capacity = Power2::round_up(capacity);
+            capacity = jstd::Power2::round_up(capacity);
         }
         return capacity;
     }
