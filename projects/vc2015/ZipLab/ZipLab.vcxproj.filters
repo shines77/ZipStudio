@@ -20,8 +20,11 @@
     <Filter Include="src\lz77">
       <UniqueIdentifier>{a9fe3e8a-97c4-48d2-b8cf-93153ec3a40c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\std">
+    <Filter Include="src\jstd">
       <UniqueIdentifier>{6ce77751-642a-465a-a913-cd738f723ea4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\jstd\bits">
+      <UniqueIdentifier>{1e4f18a7-ff3f-4554-9a32-048e7a755443}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -114,11 +117,17 @@
     <ClInclude Include="..\..\..\src\ziplab\lz77\lzDictHashmap.hpp">
       <Filter>src\lz77</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\ziplab\std\bitset.h">
-      <Filter>src\std</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\ziplab\stream\IOStreamRoot.h">
       <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\jstd\bitset.hpp">
+      <Filter>src\jstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\jstd\bits\bits.hpp">
+      <Filter>src\jstd\bits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\jstd\bits\power2.hpp">
+      <Filter>src\jstd\bits</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

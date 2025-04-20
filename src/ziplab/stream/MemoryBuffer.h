@@ -274,6 +274,19 @@ public:
     }
 
 private:
+    static inline size_type round_to_pow2() {
+        //
+    }
+
+    // Normalize capacity size, allowing a capacity of 0.
+    static inline size_type round_capacity(size_type capacity) {
+        // If not a power of two
+        if ((capacity & (capacity - 1)) != 0) {
+            capacity = round_to_pow2(capacity);
+        }
+        return capacity;
+    }
+
     inline const char_type * allocate(size_type capacity) {
         // It's allowed that when the data pointer is non-zero, the data size is zero.
         assert(capacity >= 0);
@@ -293,7 +306,9 @@ private:
     //
     template <bool IsInitialize, bool NeedPreserve>
     inline void reserve_impl(size_type new_capacity) {
-        // Allow new capacity equal to 0.
+        // Normalize capacity size, allowing a capacity of 0.
+        new_capacity = round_capacity(new_capacity);
+
         const char_type * new_data = allocate(new_capacity);
         size_type copy_size = (std::min)(new_capacity, this->size());
         // If necessary, copy old data to new data.

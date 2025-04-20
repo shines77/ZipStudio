@@ -109,6 +109,11 @@ public:
         pos_ = 0;
     }
 
+    size_type calc_capacity(size_type new_size) {
+        size_type new_capacity = 0;
+        return new_capacity;
+    }
+
     //
     // Only ensure to reserve space for at least N elements
     // and discards existing data, without initializing new elements.
@@ -127,6 +132,15 @@ public:
         buffer_.reserve(new_capacity);
         assert(size() <= capacity());
         assert(pos() <= ssize());
+    }
+
+    //
+    // Expand space for delta_size elements
+    // and preserving existing data, without initializing new elements.
+    //
+    void grow(size_type delta_size) {
+        size_type new_size = this->size() + delta_size;
+        this->reserve(new_size)
     }
 
     //

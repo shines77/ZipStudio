@@ -13,7 +13,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "ziplab/std/bitset.h"
+#include "ziplab/jstd/bitset.h"
 #include "ziplab/lz77/lz77.hpp"
 #include "ziplab/lz77/lzDictHashmap.hpp"
 
@@ -162,8 +162,8 @@ public:
         int err_code = 0;
         OutputStream compressed_os(compressed_data);
 
-        size_type data_len = input_data.size();
-        if (ziplab_likely(data_len != 0)) {
+        size_type data_size = input_data.size();
+        if (ziplab_likely(data_size != 0)) {
             //LZDictHashmap<offset_type, WindowBits> L1_hashmap;
 
             jstd::bitset<kBlockFlagSize> flag_bits;
@@ -173,10 +173,10 @@ public:
             block_data.prepare(kBlockDataSize);
 
             size_type pos = 0;
-            assert(data_len > 0);
+            assert(data_size > 0);
             do {
-                size_type remain_size = data_len - pos;
-                size_type block_capacity = (remain_size > kBlockDataSize) ? kBlockDataSize : remain_size;
+                size_type remaining_size = data_size - pos;
+                size_type block_capacity = (remaining_size > kBlockDataSize) ? kBlockDataSize : remaining_size;
                 size_type block_pos = pos;
                 size_type block_end = pos + block_capacity;
                 while (block_pos < block_end) {
@@ -184,8 +184,8 @@ public:
                     ssize_type window_first = block_pos - kWindowSize;  // It's can be negative
                     size_type window_start = (window_first >= 0) ? window_first : 0;
                     size_type window_size = (std::min)(kWindowSize, block_pos);
-                    size_type lookahead_size = (std::min)(kMaxLookAheadSize, data_len - block_pos);
-                    size_type lookahead_last = (std::min)(pos + kMaxLookAheadSize, data_len);
+                    size_type lookahead_size = (std::min)(kMaxLookAheadSize, data_size - block_pos);
+                    size_type lookahead_last = (std::min)(pos + kMaxLookAheadSize, data_size);
 
                     const char * window = input_data.data() + window_start;
                     const char * lookahead = input_data.data() + block_pos;
@@ -193,13 +193,13 @@ public:
                     MatchResult match_result = plain_find_match(window, lookahead, window_size, lookahead_size);
                     if (ziplab_likely(match_result.match_len < kMinMatchLength)) {
                         // Literal
-                        block_os.writeByte(input_data[block_pos++]);
-                        block_os.writeByte(input_data[block_pos++]);
+                        block_os.unsafeWriteByte(input_data[block_pos++]);
+                        block_os.unsafeWriteByte(input_data[block_pos++]);
                     } else {
                         // A pair of (MatchPos, MatchLength) - [distance, length]
                         PackedPair packedPair(match_result);
-                        block_os.writeByte(packedPair.parts.low);
-                        block_os.writeByte(packedPair.parts.high);
+                        block_os.unsafeWriteByte(packedPair.parts.low);
+                        block_os.unsafeWriteByte(packedPair.parts.high);
 
                         assert(match_result.match_pos != npos);
                         flag_bits.set(block_pos);
@@ -209,14 +209,17 @@ public:
                 }
 
                 // Output flag bits and block data
-                write_flag_bits(compressed_os, flag_bits, block_capacity);
-                compressed_os.write(block_data);
+                size_type flag_capacity = 0;
+                if (compressed_os.grow(flag_capacity + block_capacity)) {
+                    output_flag_bits(compressed_os, flag_bits, block_capacity);
+                    compressed_os.write(block_data);
+                }
 
                 flag_bits.reset();
                 block_data.clear();
 
                 pos = block_end;
-            } while (pos < data_len);
+            } while (pos < data_size);
         }
 
         return err_code;
@@ -243,9 +246,9 @@ public:
     }
 
 private:
-    inline size_type write_flag_bits(OutputStream & compressedOs,
-                                     const jstd::bitset<kBlockFlagSize> & flag_bits,
-                                     size_type flag_capacity) {
+    inline size_type output_flag_bits(OutputStream & compressedOs,
+                                      const jstd::bitset<kBlockFlagSize> & flag_bits,
+                                      size_type flag_capacity) {
         assert(flag_capacity <= kBlockFlagSize);
         size_type num_bytes = (flag_capacity + (CHAR_BIT - 1)) / CHAR_BIT;
 
@@ -259,7 +262,7 @@ private:
     }
 
     MatchResult plain_find_match(const char * window, const char * lookahead,
-                               size_type window_size, size_type lookahead_size) {
+                                 size_type window_size, size_type lookahead_size) {
         assert(window != nullptr);
         assert(lookahead != nullptr);
 
@@ -298,7 +301,7 @@ private:
     }
 
     MatchResult find_match(const char * window, const char * lookahead,
-                         size_type window_size, size_type lookahead_size) {
+                           size_type window_size, size_type lookahead_size) {
         size_type best_match_len = kMinMatchLength - 1;
         size_type best_offset = npos;
 

@@ -1,5 +1,5 @@
-#ifndef ZIPLAB_STD_BITSET_HPP
-#define ZIPLAB_STD_BITSET_HPP
+#ifndef ZIPLAB_JSTD_BITSET_HPP
+#define ZIPLAB_JSTD_BITSET_HPP
 
 #pragma once
 
@@ -532,4 +532,4 @@ bitset<Bits> operator ^ (const bitset<Bits> & left,
 
 } // namespace jstd
 
-#endif // ZIPLAB_STD_BITSET_HPP
+#endif // ZIPLAB_JSTD_BITSET_HPP
