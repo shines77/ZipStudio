@@ -52,6 +52,78 @@ namespace Bits {
 //
 
 //
+// Look-up table Popcount
+//
+
+static const char * const s_bitsPerByte =
+    "\0\1\1\2\1\2\2\3\1\2\2\3\2\3\3\4"
+    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
+    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
+    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
+    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
+    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
+    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
+    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
+    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
+    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
+    "\4\5\5\6\5\6\6\7\5\6\6\7\6\7\7\x8";
+
+static inline
+uint32_t lookup_popcnt8(uint8_t n)
+{
+    uint32_t popcnt8 = static_cast<uint32_t>(s_bitsPerByte[n]);
+    return popcnt8;
+}
+
+static inline
+uint32_t lookup_popcnt16(uint16_t n)
+{
+    uint32_t popcnt16 = 0;
+    popcnt16 += static_cast<uint32_t>(s_bitsPerByte[(n     ) & 0x00FFu]);
+    popcnt16 += static_cast<uint32_t>(s_bitsPerByte[(n >> 8) & 0x00FFu]);
+    return popcnt16;
+}
+
+static inline
+uint32_t lookup_popcnt32(uint32_t n)
+{
+    uint32_t popcnt32 = 0;
+    popcnt32 += static_cast<uint32_t>(s_bitsPerByte[(n      ) & 0x000000FFu]);
+    popcnt32 += static_cast<uint32_t>(s_bitsPerByte[(n >> 8 ) & 0x000000FFu]);
+    popcnt32 += static_cast<uint32_t>(s_bitsPerByte[(n >> 16) & 0x000000FFu]);
+    popcnt32 += static_cast<uint32_t>(s_bitsPerByte[(n >> 24) & 0x000000FFu]);
+    return popcnt32;
+}
+
+static inline
+uint32_t lookup_popcnt64(uint64_t n)
+{
+    uint32_t low  = static_cast<uint32_t>((n      ) & 0x00000000FFFFFFFFull);
+    uint32_t high = static_cast<uint32_t>((n >> 32) & 0x00000000FFFFFFFFull);
+
+    uint32_t popcnt64_l = 0, popcnt64_h = 0;
+
+    popcnt64_l += static_cast<uint32_t>(s_bitsPerByte[(low       ) & 0x000000FFu]);
+    popcnt64_h += static_cast<uint32_t>(s_bitsPerByte[(high      ) & 0x000000FFu]);
+
+    popcnt64_l += static_cast<uint32_t>(s_bitsPerByte[(low  >> 8 ) & 0x000000FFu]);
+    popcnt64_h += static_cast<uint32_t>(s_bitsPerByte[(high >> 8 ) & 0x000000FFu]);
+
+    popcnt64_l += static_cast<uint32_t>(s_bitsPerByte[(low  >> 16) & 0x000000FFu]);
+    popcnt64_h += static_cast<uint32_t>(s_bitsPerByte[(high >> 16) & 0x000000FFu]);
+
+    popcnt64_l += static_cast<uint32_t>(s_bitsPerByte[(low  >> 24) & 0x000000FFu]);
+    popcnt64_h += static_cast<uint32_t>(s_bitsPerByte[(high >> 24) & 0x000000FFu]);
+
+    return (popcnt64_l + popcnt64_h);
+}
+
+//
 // Parallel Popcount
 //
 static inline
