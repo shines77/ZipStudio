@@ -123,10 +123,10 @@
     <ClInclude Include="..\..\..\src\ziplab\jstd\bitset.hpp">
       <Filter>src\jstd</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\ziplab\jstd\bits\bits.hpp">
+    <ClInclude Include="..\..\..\src\ziplab\jstd\bits\Bits.hpp">
       <Filter>src\jstd\bits</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\ziplab\jstd\bits\power2.hpp">
+    <ClInclude Include="..\..\..\src\ziplab\jstd\bits\Power2.hpp">
       <Filter>src\jstd\bits</Filter>
     </ClInclude>
   </ItemGroup>

@@ -39,8 +39,8 @@
     <ClInclude Include="..\..\..\src\ziplab\config\config_pre.h" />
     <ClInclude Include="..\..\..\src\ziplab\huffman\huffman.hpp" />
     <ClInclude Include="..\..\..\src\ziplab\jstd\bitset.hpp" />
-    <ClInclude Include="..\..\..\src\ziplab\jstd\bits\bits.hpp" />
-    <ClInclude Include="..\..\..\src\ziplab\jstd\bits\power2.hpp" />
+    <ClInclude Include="..\..\..\src\ziplab\jstd\bits\Bits.hpp" />
+    <ClInclude Include="..\..\..\src\ziplab\jstd\bits\Power2.hpp" />
     <ClInclude Include="..\..\..\src\ziplab\lz77\lz77.hpp" />
     <ClInclude Include="..\..\..\src\ziplab\lz77\lzDictHashmap.hpp" />
     <ClInclude Include="..\..\..\src\ziplab\lz77\lzss.hpp" />

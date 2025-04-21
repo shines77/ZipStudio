@@ -103,6 +103,7 @@ public:
         lhs.swap(rhs);
     }
 
+    // Unsafe write
     inline void unsafeWrite(const char_type * data, size_type size) {
         index_type s_size = static_cast<index_type>(size);
         assert((this->pos() + s_size) <= this->ssize());
@@ -116,6 +117,24 @@ public:
         this->forward(size);
     }
 
+    template <typename Allocator>
+    void unsafeWrite(const std::basic_string<char_type, traits_type, Allocator> & str) {
+        unsafeWrite(str.c_str(), str.size());
+    }
+
+    void unsafeWrite(const memory_buffer_t & buffer) {
+        unsafeWrite(buffer.data(), buffer.size());
+    }
+
+    void unsafeWrite(const memory_view_t & buffer) {
+        unsafeWrite(buffer.data(), buffer.size());
+    }
+
+    void unsafeWrite(const BasicOutputStream & out) {
+        unsafeWrite(out.data(), out.size());
+    }
+
+    // Safety write
     bool write(const char_type * data, size_type size) {
         index_type s_size = static_cast<index_type>(size);
         if ((this->pos() + s_size) <= this->ssize()) {

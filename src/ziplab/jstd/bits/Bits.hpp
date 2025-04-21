@@ -38,6 +38,11 @@
 #include <bit>
 #endif
 
+//
+// For SSE 4.2, _mm_popcnt_u32(), _mm_popcnt_u64(), etc.
+//
+#include "ziplab/arch/x86_intrin.h"
+
 namespace jstd {
 namespace Bits {
 
@@ -139,7 +144,7 @@ uint32_t parallel_popcnt32(uint32_t n)
 }
 
 static inline
-uint32_t parallel_popcnt64(uint32_t n)
+uint32_t parallel_popcnt64(uint64_t n)
 {
     n = (n & 0x5555555555555555ULL) + ((n >>  1U) & 0x5555555555555555ULL);
     n = (n & 0x3333333333333333ULL) + ((n >>  2U) & 0x3333333333333333ULL);
@@ -148,7 +153,7 @@ uint32_t parallel_popcnt64(uint32_t n)
     n = (n & 0x0000FFFF0000FFFFULL) + ((n >> 16U) & 0x0000FFFF0000FFFFULL);
     n = (n & 0x00000000FFFFFFFFULL) + ((n >> 32U) & 0x00000000FFFFFFFFULL);
     assert(n >= 0 && n <= 64);
-    return n;
+    return static_cast<uint32_t>(n);
 }
 
 static inline
@@ -278,7 +283,7 @@ Source: MIT AI Lab memo, late 1970's.
 
 *****************************************************************************/
 
-// hakmem popcnt
+// hakmem popcnt 32
 static inline
 uint32_t hakmem_popcnt32(uint32_t n)
 {
@@ -287,13 +292,13 @@ uint32_t hakmem_popcnt32(uint32_t n)
     return (((tmp + (tmp >> 3)) & 030707070707) % 63U);
 }
 
-// hakmem popcnt
+// hakmem popcnt 64
 static inline
 uint32_t hakmem_popcnt64(uint64_t n)
 {
-    uint32_t tmp;
-    tmp = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
-    return (((tmp + (tmp >> 3)) & 030707070707) % 127U);
+    uint64_t tmp;
+    tmp = n - ((n >> 1) & 01333333333333333333333) - ((n >> 2) & 01111111111111111111111);
+    return (((tmp + (tmp >> 3)) & 0707070707070707070707) % 127U);
 }
 
 static inline
@@ -311,17 +316,32 @@ uint32_t hakmem_popcnt(size_t n)
 //
 // Assembly Popcount
 //
+
 static inline
 uint32_t assembly_popcnt32(uint32_t n)
 {
-    uint32_t popcnt = __mm_popcnt(n);
+    int popcnt = _mm_popcnt_u32(static_cast<unsigned int>(n));
+    return static_cast<uint32_t>(popcnt);
+}
+
+static inline
+uint32_t assembly_popcnt64(uint64_t n)
+{
+    long long popcnt = _mm_popcnt_u64(static_cast<unsigned long long>(n));
+    return static_cast<uint32_t>(popcnt);
+}
+
+static inline
+uint32_t assembly_popcnt8(uint8_t n)
+{
+    uint32_t popcnt = assembly_popcnt32(static_cast<uint32_t>(n));
     return popcnt;
 }
 
 static inline
-uint32_t assembly_popcnt64(uint32_t n)
+uint32_t assembly_popcnt16(uint16_t n)
 {
-    uint32_t popcnt = __mm_popcnt(n);
+    uint32_t popcnt = assembly_popcnt32(static_cast<uint32_t>(n));
     return popcnt;
 }
 
@@ -338,13 +358,25 @@ uint32_t assembly_popcnt(size_t n)
 ///////////////////////////////////////////////////////////////////
 
 static inline
+uint32_t popcnt8(uint32_t n)
+{
+    return assembly_popcnt8(n);
+}
+
+static inline
+uint32_t popcnt16(uint32_t n)
+{
+    return assembly_popcnt16(n);
+}
+
+static inline
 uint32_t popcnt32(uint32_t n)
 {
     return assembly_popcnt32(n);
 }
 
 static inline
-uint32_t popcnt64(uint32_t n)
+uint32_t popcnt64(uint64_t n)
 {
     return assembly_popcnt64(n);
 }

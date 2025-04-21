@@ -11,9 +11,9 @@
 #include <algorithm>    // For std::min(), std::max()
 #include <stdexcept>    // For std::exception
 
+#include "ziplab/jstd/bits/Bits.hpp"
+
 namespace jstd {
-
-
 
 #pragma pack(push, 8)
 
@@ -259,7 +259,7 @@ public:
         const unsigned char * const last = ptr + sizeof(array_);
         size_type total_count = 0;
         for ( ; ptr != last; ptr++) {
-            total_count += static_cast<size_type>(s_bitsPerByteTable[*ptr]);
+            total_count += static_cast<size_type>(Bits::lookup_popcnt8(*ptr));
         }
         return total_count;
     }
@@ -269,7 +269,7 @@ public:
         assert(index < kTotalBytes);
         const unsigned char * first = (const unsigned char *)(const void *)array_;
         const unsigned char * const ptr = first + pos;
-        return static_cast<size_type>(s_bitsPerByteTable[*ptr]);
+        return static_cast<size_type>(Bits::lookup_popcnt8(*ptr));
     }
 
     size_type count_word(ssize_type index) const noexcept {
@@ -279,7 +279,7 @@ public:
         const unsigned char * const last = ptr + sizeof(value_type);
         size_type total_count = 0;
         for ( ; ptr != last; ptr++) {
-            total_count += static_cast<size_type>(s_bitsPerByteTable[*ptr]);
+            total_count += static_cast<size_type>(Bits::lookup_popcnt8(*ptr));
         }
         return total_count;
     }
