@@ -132,9 +132,9 @@ public:
         if (this->data_ != nullptr) {
             delete[] this->data_;
             this->data_ = nullptr;
-            this->set_size(0);
+            this->size_ = 0;
             if (!this->is_fixed()) {
-                this->set_capacity(0);
+                this->capacity_ = 0;
             }
         }
     }
@@ -375,7 +375,7 @@ private:
             size_type new_size = src_size;
             const char_type * new_data = allocate(new_size);
             this->data_ = new_data;
-            this->set_capacity(new_size);
+            this->capacity_ = new_size;
 
             if (src_size > 0) {
                 std::memcpy((void *)new_data, (const void *)src_data, src_size * sizeof(char_type));
