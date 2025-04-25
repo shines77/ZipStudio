@@ -32,13 +32,8 @@ public:
     using super_type    = BasicIOStreamRoot<buffer_type, char_type, traits_type>;
     using this_type     = BasicInputStream<buffer_type, char_type, traits_type>;
 
-#if USE_MEMORY_STORAGE
-    using memory_buffer_t = BasicMemoryBuffer< BasicMemoryStorage<char_type, traits_type> >;
-    using memory_view_t   = BasicMemoryView< BasicMemoryStorage<char_type, traits_type> >;
-#else
-    using memory_buffer_t = BasicMemoryBuffer<char_type, traits_type>;
+    using memory_buffer_t = BasicMemoryBuffer<char_type, MemoryBufferT::kIsMutable, traits_type>;
     using memory_view_t   = BasicMemoryView<char_type, traits_type>;
-#endif
 
     using size_type     = typename memory_buffer_t::size_type;
     using diff_type     = typename memory_buffer_t::diff_type;
@@ -780,23 +775,11 @@ private:
     //
 };
 
-#if USE_MEMORY_STORAGE
-
-using InputStream  = BasicInputStream< BasicMemoryBuffer< BasicMemoryStorage<char, std::char_traits<char>> >, char, std::char_traits<char> >;
-using WInputStream = BasicInputStream< BasicMemoryBuffer< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>> >, wchar_t, std::char_traits<wchar_t> >;
-
-using InputStreamView  = BasicInputStream< BasicMemoryView< BasicMemoryStorage<char, std::char_traits<char>> >, char, std::char_traits<char>>;
-using WInputStreamView = BasicInputStream< BasicMemoryView< BasicMemoryStorage<wchar_t, std::char_traits<wchar_t>> >, wchar_t, std::char_traits<wchar_t> >;
-
-#else
-
-using InputStream  = BasicInputStream< BasicMemoryBuffer<char, std::char_traits<char> >, char, std::char_traits<char>>;
-using WInputStream = BasicInputStream< BasicMemoryBuffer<wchar_t, std::char_traits<wchar_t> >, wchar_t, std::char_traits<wchar_t>>;
+using InputStream  = BasicInputStream< BasicMemoryBuffer<char, true, std::char_traits<char> >, char, std::char_traits<char>>;
+using WInputStream = BasicInputStream< BasicMemoryBuffer<wchar_t, true, std::char_traits<wchar_t> >, wchar_t, std::char_traits<wchar_t>>;
 
 using InputStreamView  = BasicInputStream< BasicMemoryView<char, std::char_traits<char> >, char, std::char_traits<char>>;
 using WInputStreamView = BasicInputStream< BasicMemoryView<wchar_t, std::char_traits<wchar_t> >, wchar_t, std::char_traits<wchar_t>>;
-
-#endif
 
 } // namespace ziplab
 

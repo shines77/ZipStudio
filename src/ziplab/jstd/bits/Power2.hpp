@@ -84,13 +84,13 @@ uint32_t round_up_32(uint32_t n)
             uint32_t leading_zeros = __builtin_clz(n);
             uint32_t highest_bit_pos = 31 - leading_zeros;
 
-            uint32_t power2 = 1 << (highest_bit_pos + 1);
+            uint32_t power2 = 1u << (highest_bit_pos + 1);
             return power2;
 #elif defined(_MSC_VER)
             n--;
             assert(n > 0);
             unsigned long highest_bit_pos;
-            _BitScanReverse(&highest_bit_pos, n);
+            ::_BitScanReverse(&highest_bit_pos, n);
 
             uint32_t power2 = 1u << (highest_bit_pos + 1);
             return power2;
@@ -121,13 +121,13 @@ uint64_t round_up_64(uint64_t n)
             uint32_t leading_zeros = __builtin_clzll(n);
             uint32_t highest_bit_pos = 31 - leading_zeros;
 
-            uint64_t power2 = 1 << (highest_bit_pos + 1);
+            uint64_t power2 = 1ull << (highest_bit_pos + 1);
             return power2;
 #elif defined(_MSC_VER)
             n--;
             assert(n > 0);
             unsigned long highest_bit_pos;
-            _BitScanReverse64(&highest_bit_pos, n);
+            ::_BitScanReverse64(&highest_bit_pos, n);
 
             uint64_t power2 = 1ull << (highest_bit_pos + 1);
             return power2;
