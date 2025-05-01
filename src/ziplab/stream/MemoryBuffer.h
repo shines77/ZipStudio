@@ -125,6 +125,9 @@ public:
     char_type * end() { return (data() + size()); }
     const char_type * end() const { return (data() + size()); }
 
+    char_type * current() { return (data() + size()); }
+    const char_type * current() const { return (data() + size()); }
+
     char_type * tail() { return (data() + capacity()); }
     const char_type * tail() const { return (data() + capacity()); }
 
@@ -137,6 +140,11 @@ public:
                 this->capacity_ = 0;
             }
         }
+    }
+
+    inline bool if_need_grow(size_type delta_size) const {
+        size_type new_size = this->size() + delta_size;
+        return (new_size > this->capacity());
     }
 
     //
@@ -160,8 +168,7 @@ public:
         if (ziplab_likely(new_size <= this->capacity())) {
             return false;
         } else {
-            size_type new_capacity = this->capacity() * 2;
-            reserve_impl<false, true>(new_capacity);
+            grow_impl(new_size);
             return true;
         }
     }
@@ -232,6 +239,63 @@ public:
         copy_from_container_impl(this->data(), this->size(), src);
     }
 
+    // Cursor
+    this_type & backward(size_type step) {
+        size_ -= step;
+        return *this;
+    }
+
+    this_type & forward(size_type step) {
+        size_ += step;
+        return *this;
+    }
+
+    // Unsafe write value
+    template <typename T>
+    void unsafeWriteValue(const T & val) {
+        using value_type = typename std::remove_reference<T>::type;
+        static constexpr size_type step = sizeof(value_type);
+        assert((this->size() + step) <= this->capacity());
+
+        char_type * curr = this->current();
+        *(reinterpret_cast<value_type *>(curr)) = val;
+        this->forward(step);
+    }
+
+    template <typename T>
+    void unsafeWriteValue(T && val) {
+        using value_type = typename std::remove_reference<T>::type;
+        static constexpr size_type step = sizeof(value_type);
+        assert((this->size() + step) <= this->capacity());
+
+        char_type * curr = this->current();
+        *(reinterpret_cast<value_type *>(curr)) = std::forward<T>(val);
+        this->forward(step);
+    }
+
+    void unsafeWrite(char_type ch) {
+        unsafe_write_value(ch);
+    }
+
+    void write(char_type ch) {
+        size_type delta_size = sizeof(char_type);
+        if (ziplab_likely(!if_need_grow(delta_size))) {
+            unsafe_write(ch);
+        } else {
+            grow_impl(delta_size);
+            unsafe_write(ch);
+        }
+    }
+
+    void write(const char_type * data, size_type count) {
+        if (ziplab_likely(!if_need_grow(count))) {
+            unsafe_write(data, count);
+        } else {
+            grow_impl(count);
+            unsafe_write(data, count);
+        }
+    }
+
     void swap(BasicMemoryBuffer & other) {
         if (std::addressof(other) != this) {
             swap_data(other);
@@ -247,9 +311,9 @@ private:
     static inline size_type round_capacity(size_type capacity) {
         // If not a power of two
         assert(capacity > 0);
+        capacity = (std::min)(capacity, kMinCapacity);
         if ((capacity & (capacity - 1)) != 0) {
-            capacity = (std::min)(capacity, kMinCapacity);
-            capacity = jstd::Power2::round_up<kMinCapacity>(capacity);
+            capacity = jstd::Power2::round_up<kMinCapacity, true>(capacity);
         }
         return capacity;
     }
@@ -265,6 +329,21 @@ private:
     inline void deallocate() {
         assert(this->data_ != nullptr);
         delete[] this->data_;
+    }
+
+    //
+    // Grow policy: capacity * 2
+    //
+    inline void grow_impl(size_type delta_size) {
+        size_type new_size = this->size() + delta_size;
+        size_type new_capacity = this->capacity() * 2;
+        if (ziplab_unlikely(new_size >= new_capacity)) {
+            if (new_size > new_capacity)
+                new_capacity = round_capacity(new_size);
+            else
+                new_capacity = new_capacity * 2;
+        }
+        reserve_impl<false, true>(new_capacity);
     }
 
     //

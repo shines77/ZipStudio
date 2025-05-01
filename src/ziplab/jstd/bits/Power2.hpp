@@ -24,9 +24,9 @@ static inline bool is_power2(T n) {
 //
 // round_to_pow2(n)
 //
-template <size_t MinValue>
+template <size_t MinValue, bool NonPower2 = false>
 static inline
-uint32_t round_to(uint32_t n)
+uint32_t round_to_32(uint32_t n)
 {
     if (n >= 2) {
 #if defined(__GNUC__) || defined(__clang__)
@@ -58,7 +58,18 @@ uint32_t round_to(uint32_t n)
     }
 }
 
-template <size_t MinValue>
+/*********************************************************
+
+  N = round_to(n) = |Log2(n)|
+
+  eg:
+     round_to(0) = 0, round_to(1) = 1, round_to(2) = 2,
+     round_to(4) = 4, round_to(5) = 4, round_to(6) = 4,
+     round_to(7) = 4, round_to(8) = 8,
+
+*********************************************************/
+
+template <size_t MinValue, bool NonPower2 = false>
 static inline
 size_t round_to(size_t n)
 {
@@ -68,15 +79,11 @@ size_t round_to(size_t n)
     return n;
 }
 
-//
-// round_up_pow2(n)
-//
-
-template <uint32_t MinValue = 0>
+template <uint32_t MinValue = 0, bool NonPower2 = false>
 static inline
 uint32_t round_up_32(uint32_t n)
 {
-    if (!is_power2(n)) {
+    if (NonPower2 || !is_power2(n)) {
         if ((MinValue >= 2) || (n >= 2)) {
 #if defined(__GNUC__) || defined(__clang__)
             n--;
@@ -109,11 +116,11 @@ uint32_t round_up_32(uint32_t n)
     return n;
 }
 
-template <uint64_t MinValue = 0>
+template <uint64_t MinValue = 0, bool NonPower2 = false>
 static inline
 uint64_t round_up_64(uint64_t n)
 {
-    if (!is_power2(n)) {
+    if (NonPower2 || !is_power2(n)) {
         if ((MinValue >= 2) || (n >= 2)) {
 #if defined(__GNUC__) || defined(__clang__)
             n--;
@@ -146,14 +153,25 @@ uint64_t round_up_64(uint64_t n)
     return n;
 }
 
-template <size_t MinValue = 0>
+/*********************************************************
+
+  N = round_up(n) = 2 ^ (|Log2(n - 1)| + 1)
+
+  eg:
+     round_up(0) = 0, round_up(1) = 1, round_up(2) = 2,
+     round_up(4) = 4, round_up(5) = 8, round_up(6) = 8,
+     round_up(7) = 8, round_up(8) = 8,
+
+*********************************************************/
+
+template <size_t MinValue = 0, bool NonPower2 = false>
 static inline
 size_t round_up(size_t n)
 {
 #if ZIPLAB_WORD_LEN == 32
-    return round_up_32(static_cast<uint32_t>(n));
+    return round_up_32<MinValue, NonPower2>(static_cast<uint32_t>(n));
 #else
-    return round_up_64(static_cast<uint64_t>(n));
+    return round_up_64<MinValue, NonPower2>(static_cast<uint64_t>(n));
 #endif
 }
 
