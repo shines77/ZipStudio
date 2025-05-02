@@ -313,7 +313,7 @@ private:
         assert(capacity > 0);
         capacity = (std::min)(capacity, kMinCapacity);
         if ((capacity & (capacity - 1)) != 0) {
-            capacity = jstd::Power2::round_up<kMinCapacity, true>(capacity);
+            capacity = jstd::Power2::round_up<size_type, kMinCapacity, true>(capacity);
         }
         return capacity;
     }

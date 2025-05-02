@@ -8,8 +8,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <type_traits>
 #include <limits.h>
-
 #include <assert.h>
 
 #include "ziplab/basic/stddef.h"
@@ -42,6 +42,19 @@
 // For SSE 4.2, _mm_popcnt_u32(), _mm_popcnt_u64(), etc.
 //
 #include "ziplab/arch/x86_intrin.h"
+
+namespace jstd {
+
+template <typename SizeType>
+struct make_size_t {
+    typedef typename std::conditional<(sizeof(SizeType) <= 4),
+                                      std::uint32_t,
+                                      std::uint64_t>::type type;
+    typedef typename std::make_unsigned<type>::type unsigned_type;
+    typedef typename std::make_signed<type>::type   signed_type;
+};
+
+} // namespace jstd
 
 namespace jstd {
 namespace Bits {
@@ -159,7 +172,7 @@ uint32_t parallel_popcnt64(uint64_t n)
 static inline
 uint32_t parallel_popcnt(size_t n)
 {
-#if ZIPLAB_WORD_LEN == 32
+#if (ZIPLAB_WORD_LEN == 32)
     return parallel_popcnt32(static_cast<uint32_t>(n));
 #else
     return parallel_popcnt64(static_cast<uint64_t>(n));
@@ -203,7 +216,7 @@ uint32_t hacker_popcnt64(uint64_t n)
 static inline
 uint32_t hacker_popcnt(size_t n)
 {
-#if ZIPLAB_WORD_LEN == 32
+#if (ZIPLAB_WORD_LEN == 32)
     return hacker_popcnt32(static_cast<uint32_t>(n));
 #else
     return hacker_popcnt64(static_cast<uint64_t>(n));
@@ -245,7 +258,7 @@ uint32_t nifty_popcnt64(uint64_t n)
 static inline
 uint32_t nifty_popcnt(size_t n)
 {
-#if ZIPLAB_WORD_LEN == 32
+#if (ZIPLAB_WORD_LEN == 32)
     return nifty_popcnt32(static_cast<uint32_t>(n));
 #else
     return nifty_popcnt64(static_cast<uint64_t>(n));
@@ -304,7 +317,7 @@ uint32_t hakmem_popcnt64(uint64_t n)
 static inline
 uint32_t hakmem_popcnt(size_t n)
 {
-#if ZIPLAB_WORD_LEN == 32
+#if (ZIPLAB_WORD_LEN == 32)
     return hakmem_popcnt32(static_cast<uint32_t>(n));
 #else
     return hakmem_popcnt64(static_cast<uint64_t>(n));
@@ -348,7 +361,7 @@ uint32_t assembly_popcnt16(uint16_t n)
 static inline
 uint32_t assembly_popcnt(size_t n)
 {
-#if ZIPLAB_WORD_LEN == 32
+#if (ZIPLAB_WORD_LEN == 32)
     return assembly_popcnt32(static_cast<uint32_t>(n));
 #else
     return assembly_popcnt64(static_cast<uint64_t>(n));
@@ -384,7 +397,7 @@ uint32_t popcnt64(uint64_t n)
 static inline
 uint32_t popcnt(size_t n)
 {
-#if ZIPLAB_WORD_LEN == 32
+#if (ZIPLAB_WORD_LEN == 32)
     return popcnt32(static_cast<uint32_t>(n));
 #else
     return popcnt64(static_cast<uint64_t>(n));
@@ -457,7 +470,7 @@ uint32_t bsf64(uint64_t n)
 static inline
 uint32_t bsf(size_t n)
 {
-#if ZIPLAB_WORD_LEN == 32
+#if (ZIPLAB_WORD_LEN == 32)
     return bsf32(static_cast<uint32_t>(n));
 #else
     return bsf64(static_cast<uint64_t>(n));
@@ -502,12 +515,223 @@ uint32_t bsr64(uint64_t n)
 static inline
 uint32_t bsr(size_t n)
 {
-#if ZIPLAB_WORD_LEN == 32
+#if (ZIPLAB_WORD_LEN == 32)
     return bsr32(static_cast<uint32_t>(n));
 #else
     return bsr64(static_cast<uint64_t>(n));
 #endif
 }
+
+template <typename SizeType>
+inline
+std::uint32_t bitScanForward(SizeType n)
+{
+    static_assert(std::is_integral<SizeType>::value,
+                  "Error: jstd::Bits::bitScanForward(SizeType n) -- n must be a integral type.");
+    typedef typename jstd::make_size_t<SizeType>::type size_type;
+    size_type u = static_cast<size_type>(n);
+    assert(u != 0);
+    if (sizeof(size_type) <= 4) {
+        return bsf32(static_cast<uint32_t>(u));
+    } if (sizeof(size_type) == 8) {
+        return bsf64(static_cast<uint64_t>(u));
+    } else {
+        return bsf(n);
+    }
+}
+
+template <typename SizeType>
+inline
+std::uint32_t bitScanReverse(SizeType n)
+{
+    static_assert(std::is_integral<SizeType>::value,
+                  "Error: jstd::Bits::bitScanReverse(SizeType n) -- n must be a integral type.");
+    typedef typename jstd::make_size_t<SizeType>::type size_type;
+    size_type u = static_cast<size_type>(n);
+    assert(u != 0);
+    if (sizeof(size_type) <= 4) {
+        return bsr32(static_cast<uint32_t>(u));
+    } if (sizeof(size_type) == 8) {
+        return bsr64(static_cast<uint64_t>(u));
+    } else {
+        return bsr(n);
+    }
+}
+
+static inline
+unsigned int countTrailingZeros32(unsigned int x) {
+#if defined(__BMI1__)
+    return (unsigned int)_tzcnt_u32(x);
+#else
+    if (ziplab_likely(x != 0))
+        return (unsigned int)bsf32(x);
+    else
+        return 32;
+#endif
+}
+
+static inline
+unsigned int countTrailingZeros64(uint64_t x) {
+#if defined(__BMI1__)
+    return (unsigned int)_tzcnt_u64(x);
+#else
+    if (ziplab_likely(x != 0))
+        return (unsigned int)bsf64(x);
+    else
+        return 64;
+#endif
+}
+
+static inline
+unsigned int countLeadingZeros32(unsigned int x) {
+#if defined(__BMI1__)
+    return (unsigned int)_lzcnt_u32(x);
+#else
+    if (ziplab_likely(x != 0))
+        return (unsigned int)(31u - bsr32(x));
+    else
+        return 32;
+#endif
+}
+
+static inline
+unsigned int countLeadingZeros64(uint64_t x) {
+#if defined(__BMI1__)
+    return (unsigned int)_lzcnt_u64(x);
+#else
+    if (ziplab_likely(x != 0))
+        return (unsigned int)(63u - bsr64(x));
+    else
+        return 64;
+#endif
+}
+
+template <typename SizeType>
+inline
+std::uint32_t countTrailingZeros(SizeType n)
+{
+    static_assert(std::is_integral<SizeType>::value,
+                  "Error: jstd::Bits::countTrailingZeros(SizeType n) -- n must be a integral type.");
+    typedef typename jstd::make_size_t<SizeType>::type size_type;
+    size_type u = static_cast<size_type>(n);
+    assert(u != 0);
+    if (sizeof(size_type) <= 4) {
+        return countTrailingZeros32(static_cast<uint32_t>(u));
+    } else {
+        assert(sizeof(size_type) == 8);
+        return countTrailingZeros64(static_cast<uint64_t>(u));
+    }
+}
+
+template <typename SizeType>
+inline
+std::uint32_t countLeadingZeros(SizeType n)
+{
+    static_assert(std::is_integral<SizeType>::value,
+                  "Error: jstd::Bits::countLeadingZeros(SizeType n) -- n must be a integral type.");
+    typedef typename jstd::make_size_t<SizeType>::type size_type;
+    size_type u = static_cast<size_type>(n);
+    assert(u != 0);
+    if (sizeof(size_type) <= 4) {
+        return countLeadingZeros32(static_cast<uint32_t>(u));
+    } else {
+        assert(sizeof(size_type) == 8);
+        return countLeadingZeros64(static_cast<uint64_t>(u));
+    }
+}
+
+#ifdef _MSC_VER
+#pragma warning (push)
+#pragma warning (disable: 4146)
+#endif
+
+//
+// Get the least significant 1 bit (LS1B)
+//
+static inline
+uint32_t ls1b32(uint32_t x) {
+    return (x & (uint32_t)-x);
+}
+
+static inline
+uint64_t ls1b64(uint64_t x) {
+    return (x & (uint64_t)-x);
+}
+
+static inline
+size_t ls1b(size_t x) {
+    return (x & (size_t)-x);
+}
+
+//
+// Get the most significant 1 bit (MS1B)
+//
+static inline
+uint32_t ms1b32(uint32_t x) {
+    return (x != 0) ? (uint32_t)(1ul << bsr32(x)) : 0;
+}
+
+static inline
+uint64_t ms1b64(uint64_t x) {
+    return (x != 0) ? (uint64_t)(1ull << bsr64(x)) : 0;
+}
+
+static inline
+size_t ms1b(size_t x) {
+    return (x != 0) ? ((size_t)(1u) << bsr(x)) : 0;
+}
+
+//
+// Clear the lowest bit (the least significant 1 bit, LS1B)
+//
+static inline
+uint32_t clearLowestBit32(uint32_t x) {
+    // _blsr_u32(n)
+    return (x & (uint32_t)(x - 1));
+}
+
+static inline
+uint64_t clearLowestBit64(uint64_t x) {
+    // _blsr_u64(n)
+    return (x & (uint64_t)(x - 1));
+}
+
+static inline
+size_t clearLowestBit(size_t x) {
+    return (x & (size_t)(x - 1));
+}
+
+//
+// log2_int()
+//
+static inline
+uint32_t log2_int_32(uint32_t n) {
+    if (ziplab_likely(n > 1))
+        return (uint32_t)(bsr32(n - 1) + 1);
+    else
+        return n;
+}
+
+static inline
+uint64_t log2_int_64(uint64_t n) {
+    if (ziplab_likely(n > 1))
+        return (uint64_t)(bsr64(n - 1) + 1);
+    else
+        return n;
+}
+
+static inline
+size_t log2_int(size_t n) {
+#if (ZIPLAB_WORD_LEN == 32)
+    return log2_int_32(n);
+#else
+    return log2_int_64(n);
+#endif
+}
+
+#ifdef _MSC_VER
+#pragma warning (pop)
+#endif
 
 } // namespace Bits
 } // namespace jstd

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <cstdbool>
+#include <type_traits>
 #include <assert.h>
 
 #include "ziplab/basic/stddef.h"
@@ -17,8 +18,15 @@ namespace jstd {
 namespace Power2 {
 
 template <typename T>
-static inline bool is_power2(T n) {
+static inline
+bool is_power2(T n) {
     return ((n & (n - 1)) == 0);
+}
+
+template <typename T>
+static inline
+bool is_power2_not_0(T n) {
+    return (is_power2(n) && (n != 0));
 }
 
 //
@@ -164,15 +172,44 @@ uint64_t round_up_64(uint64_t n)
 
 *********************************************************/
 
-template <size_t MinValue = 0, bool NonPower2 = false>
-static inline
-size_t round_up(size_t n)
+template <typename SizeType, SizeType MinValue = 0, bool NonPower2 = false>
+inline
+typename jstd::make_size_t<SizeType>::type
+round_up(SizeType N)
 {
-#if ZIPLAB_WORD_LEN == 32
-    return round_up_32<MinValue, NonPower2>(static_cast<uint32_t>(n));
-#else
-    return round_up_64<MinValue, NonPower2>(static_cast<uint64_t>(n));
+    static_assert(std::is_integral<SizeType>::value,
+                  "Error: jstd::Power2::round_up(SizeType n) -- n must be a integral type.");
+    typedef typename jstd::make_size_t<SizeType>::type  size_type;
+#ifndef NDEBUG
+    typedef typename std::make_signed<size_type>::type  signed_type;
 #endif
+    static constexpr size_type kMaxNumber = (std::numeric_limits<size_type>::max)();
+    static constexpr size_type kMaxValue = kMaxNumber / 2 + 1;
+
+    size_type n = static_cast<size_type>(N);
+    if ((n < kMaxValue) || (sizeof(size_type) > 4)) {
+        if (NonPower2) {
+            assert(!Bits::is_power2(n));
+            if ((MinValue > 0) || (n > 0)) {
+                assert(n > 0);
+                std::uint32_t ms1b_pos = Bits::bitScanReverse(n);
+                return (static_cast<size_type>(1) << (ms1b_pos + 1));
+            } else {
+                return static_cast<size_type>(n);
+            }
+        } else {
+            if ((MinValue >= 2) || (n >= 2)) {
+                assert(signed_type(n - 1) > 0);
+                std::uint32_t ms1b_pos = Bits::bitScanReverse(n - 1);
+                return (static_cast<size_type>(1) << (ms1b_pos + 1));
+            } else {
+                return static_cast<size_type>(n);
+            }
+        }
+    }
+    else {
+        return kMaxNumber;
+    }
 }
 
 } // namespace Power2
