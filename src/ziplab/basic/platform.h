@@ -282,8 +282,8 @@
  || defined(ZIPLAB_IS_WINRT) || defined(ZIPLAB_IS_WP8)
 #ifndef ZIPLAB_IS_WINFAMILY
 #define ZIPLAB_IS_WINFAMILY           (ZIPLAB_CHECK_OS(WIN32) || ZIPLAB_CHECK_OS(WIN64) \
-                                  || ZIPLAB_CHECK_OS(WINCE) || ZIPLAB_CHECK_OS(WINRT) \
-                                  || ZIPLAB_CHECK_OS(WP8))
+                                    || ZIPLAB_CHECK_OS(WINCE) || ZIPLAB_CHECK_OS(WINRT) \
+                                    || ZIPLAB_CHECK_OS(WP8))
 #endif
 #endif
 

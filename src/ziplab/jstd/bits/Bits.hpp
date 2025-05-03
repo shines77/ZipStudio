@@ -43,6 +43,10 @@
 //
 #include "ziplab/arch/x86_intrin.h"
 
+//
+// See: https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.htm
+//
+
 namespace jstd {
 
 template <typename SizeType>
@@ -650,17 +654,39 @@ std::uint32_t countLeadingZeros(SizeType n)
 //
 static inline
 uint32_t ls1b32(uint32_t x) {
+#if defined(__BMI1__)
+    return _blsi_u32(x);
+#else
     return (x & (uint32_t)-x);
+#endif
 }
 
 static inline
 uint64_t ls1b64(uint64_t x) {
+#if defined(__BMI1__)
+  #if (ZIPLAB_WORD_LEN == 32)
+    uint32_t ls1b_low  = _blsi_u32((uint32_t)(x & 0x00000000FFFFFFFFull));
+    uint32_t ls1b_high = _blsi_u32((uint32_t)(x >> 32));
+    return (((uint64_t)ls1b_high << 32) | (uint64_t)ls1b_low);
+  #else
+    return _blsi_u64(x);
+  #endif
+#else
     return (x & (uint64_t)-x);
+#endif
 }
 
 static inline
 size_t ls1b(size_t x) {
+#if defined(__BMI1__)
+  #if (ZIPLAB_WORD_LEN == 32)
+    return ls1b32(x);
+  #else
+    return ls1b64(x);
+  #endif
+#else
     return (x & (size_t)-x);
+#endif
 }
 
 //
@@ -684,21 +710,87 @@ size_t ms1b(size_t x) {
 //
 // Clear the lowest bit (the least significant 1 bit, LS1B)
 //
+// dest := a AND (a - 1)
+//
 static inline
 uint32_t clearLowestBit32(uint32_t x) {
-    // _blsr_u32(n)
+#if defined(__BMI1__)
+    return _blsr_u32(n);
+#else
     return (x & (uint32_t)(x - 1));
+#endif
 }
 
 static inline
 uint64_t clearLowestBit64(uint64_t x) {
-    // _blsr_u64(n)
+#if defined(__BMI1__)
+  #if (ZIPLAB_WORD_LEN == 32)
+    uint32_t blsr_low  = _blsr_u32((uint32_t)(x & 0x00000000FFFFFFFFull));
+    uint32_t blsr_high = _blsr_u32((uint32_t)(x >> 32));
+    return (((uint64_t)blsr_high << 32) | (uint64_t)blsr_low);
+  #else
+    return _blsr_u64(x);
+  #endif
+#else
     return (x & (uint64_t)(x - 1));
+#endif
 }
 
 static inline
 size_t clearLowestBit(size_t x) {
+#if defined(__BMI1__)
+  #if (ZIPLAB_WORD_LEN == 32)
+    return clearLowestBit32(x);
+  #else
+    return clearLowestBit64(x);
+  #endif
+#else
     return (x & (size_t)(x - 1));
+#endif
+}
+
+//
+// Set all the lower bits of dest up to and including the lowest set bit in unsigned 32/64-bit integer a.
+//
+// dest := a XOR (a - 1)
+//
+// Set all the lowest bit to 1 (the least significant 1 bit, LS1B)
+//
+static inline
+uint32_t setAllLowestBits32(uint32_t x) {
+#if defined(__BMI1__)
+    return _blsmsk_u32(n);
+#else
+    return (x ^ (uint32_t)(x - 1));
+#endif
+}
+
+static inline
+uint64_t setAllLowestBits64(uint64_t x) {
+#if defined(__BMI1__)
+  #if (ZIPLAB_WORD_LEN == 32)
+    uint32_t blsmsk_low  = _blsmsk_u32((uint32_t)(x & 0x00000000FFFFFFFFull));
+    uint32_t blsmsk_high = _blsmsk_u32((uint32_t)(x >> 32));
+    return (((uint64_t)blsmsk_high << 32) | (uint64_t)blsmsk_low);
+  #else
+    return _blsmsk_u64(x);
+  #endif
+#else
+    return (x ^ (uint64_t)(x - 1));
+#endif
+}
+
+static inline
+size_t setAllLowestBits(size_t x) {
+#if defined(__BMI1__)
+  #if (ZIPLAB_WORD_LEN == 32)
+    return setAllLowestBits32(x);
+  #else
+    return setAllLowestBits64(x);
+  #endif
+#else
+    return (x ^ (size_t)(x - 1));
+#endif
 }
 
 //
