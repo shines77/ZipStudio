@@ -588,7 +588,7 @@ unsigned int countTrailingZeros64(uint64_t x) {
 
 static inline
 unsigned int countLeadingZeros32(unsigned int x) {
-#if defined(__BMI1__)
+#if defined(__LZCNT__)
     return (unsigned int)_lzcnt_u32(x);
 #else
     if (ziplab_likely(x != 0))
@@ -600,7 +600,7 @@ unsigned int countLeadingZeros32(unsigned int x) {
 
 static inline
 unsigned int countLeadingZeros64(uint64_t x) {
-#if defined(__BMI1__)
+#if defined(__LZCNT__)
     return (unsigned int)_lzcnt_u64(x);
 #else
     if (ziplab_likely(x != 0))
