@@ -563,7 +563,8 @@ std::uint32_t bitScanReverse(SizeType n)
 }
 
 static inline
-unsigned int countTrailingZeros32(unsigned int x) {
+unsigned int countTrailingZeros32(unsigned int x)
+{
 #if defined(__BMI1__)
     return (unsigned int)_tzcnt_u32(x);
 #else
@@ -575,7 +576,8 @@ unsigned int countTrailingZeros32(unsigned int x) {
 }
 
 static inline
-unsigned int countTrailingZeros64(uint64_t x) {
+unsigned int countTrailingZeros64(uint64_t x)
+{
 #if defined(__BMI1__)
     return (unsigned int)_tzcnt_u64(x);
 #else
@@ -587,7 +589,8 @@ unsigned int countTrailingZeros64(uint64_t x) {
 }
 
 static inline
-unsigned int countLeadingZeros32(unsigned int x) {
+unsigned int countLeadingZeros32(unsigned int x)
+{
 #if defined(__LZCNT__)
     return (unsigned int)_lzcnt_u32(x);
 #else
@@ -599,7 +602,8 @@ unsigned int countLeadingZeros32(unsigned int x) {
 }
 
 static inline
-unsigned int countLeadingZeros64(uint64_t x) {
+unsigned int countLeadingZeros64(uint64_t x)
+{
 #if defined(__LZCNT__)
     return (unsigned int)_lzcnt_u64(x);
 #else
@@ -653,7 +657,8 @@ std::uint32_t countLeadingZeros(SizeType n)
 // Get the least significant 1 bit (LS1B)
 //
 static inline
-uint32_t ls1b32(uint32_t x) {
+uint32_t ls1b32(uint32_t x)
+{
 #if defined(__BMI1__)
     return _blsi_u32(x);
 #else
@@ -662,7 +667,8 @@ uint32_t ls1b32(uint32_t x) {
 }
 
 static inline
-uint64_t ls1b64(uint64_t x) {
+uint64_t ls1b64(uint64_t x)
+{
 #if defined(__BMI1__)
   #if (ZIPLAB_WORD_LEN == 32)
     uint32_t ls1b_low  = _blsi_u32((uint32_t)(x & 0x00000000FFFFFFFFull));
@@ -677,7 +683,8 @@ uint64_t ls1b64(uint64_t x) {
 }
 
 static inline
-size_t ls1b(size_t x) {
+size_t ls1b(size_t x)
+{
 #if defined(__BMI1__)
   #if (ZIPLAB_WORD_LEN == 32)
     return ls1b32(x);
@@ -693,12 +700,14 @@ size_t ls1b(size_t x) {
 // Get the most significant 1 bit (MS1B)
 //
 static inline
-uint32_t ms1b32(uint32_t x) {
+uint32_t ms1b32(uint32_t x)
+{
     return (x != 0) ? (uint32_t)(1ul << bsr32(x)) : 0;
 }
 
 static inline
-uint64_t ms1b64(uint64_t x) {
+uint64_t ms1b64(uint64_t x)
+{
     return (x != 0) ? (uint64_t)(1ull << bsr64(x)) : 0;
 }
 
@@ -713,7 +722,8 @@ size_t ms1b(size_t x) {
 // dest := a AND (a - 1)
 //
 static inline
-uint32_t clearLowestBit32(uint32_t x) {
+uint32_t clearLowestBit32(uint32_t x)
+{
 #if defined(__BMI1__)
     return _blsr_u32(n);
 #else
@@ -722,7 +732,8 @@ uint32_t clearLowestBit32(uint32_t x) {
 }
 
 static inline
-uint64_t clearLowestBit64(uint64_t x) {
+uint64_t clearLowestBit64(uint64_t x)
+{
 #if defined(__BMI1__)
   #if (ZIPLAB_WORD_LEN == 32)
     uint32_t blsr_low  = _blsr_u32((uint32_t)(x & 0x00000000FFFFFFFFull));
@@ -737,7 +748,8 @@ uint64_t clearLowestBit64(uint64_t x) {
 }
 
 static inline
-size_t clearLowestBit(size_t x) {
+size_t clearLowestBit(size_t x)
+{
 #if defined(__BMI1__)
   #if (ZIPLAB_WORD_LEN == 32)
     return clearLowestBit32(x);
@@ -757,7 +769,8 @@ size_t clearLowestBit(size_t x) {
 // Set all the lowest bit to 1 (the least significant 1 bit, LS1B)
 //
 static inline
-uint32_t setAllLowestBits32(uint32_t x) {
+uint32_t setAllLowestBits32(uint32_t x)
+{
 #if defined(__BMI1__)
     return _blsmsk_u32(n);
 #else
@@ -766,7 +779,8 @@ uint32_t setAllLowestBits32(uint32_t x) {
 }
 
 static inline
-uint64_t setAllLowestBits64(uint64_t x) {
+uint64_t setAllLowestBits64(uint64_t x)
+{
 #if defined(__BMI1__)
   #if (ZIPLAB_WORD_LEN == 32)
     uint32_t blsmsk_low  = _blsmsk_u32((uint32_t)(x & 0x00000000FFFFFFFFull));
@@ -781,7 +795,8 @@ uint64_t setAllLowestBits64(uint64_t x) {
 }
 
 static inline
-size_t setAllLowestBits(size_t x) {
+size_t setAllLowestBits(size_t x)
+{
 #if defined(__BMI1__)
   #if (ZIPLAB_WORD_LEN == 32)
     return setAllLowestBits32(x);
@@ -797,7 +812,8 @@ size_t setAllLowestBits(size_t x) {
 // log2_int()
 //
 static inline
-uint32_t log2_int_32(uint32_t n) {
+uint32_t log2_int_32(uint32_t n)
+{
     if (ziplab_likely(n > 1))
         return (uint32_t)(bsr32(n - 1) + 1);
     else
@@ -805,7 +821,8 @@ uint32_t log2_int_32(uint32_t n) {
 }
 
 static inline
-uint64_t log2_int_64(uint64_t n) {
+uint64_t log2_int_64(uint64_t n)
+{
     if (ziplab_likely(n > 1))
         return (uint64_t)(bsr64(n - 1) + 1);
     else
@@ -813,7 +830,8 @@ uint64_t log2_int_64(uint64_t n) {
 }
 
 static inline
-size_t log2_int(size_t n) {
+size_t log2_int(size_t n)
+{
 #if (ZIPLAB_WORD_LEN == 32)
     return log2_int_32(n);
 #else
