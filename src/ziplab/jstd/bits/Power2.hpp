@@ -170,12 +170,16 @@ uint64_t round_up_64(uint64_t n)
      round_up(4) = 4, round_up(5) = 8, round_up(6) = 8,
      round_up(7) = 8, round_up(8) = 8,
 
+  Similar to std::bit_ceil(x) in C++ 20.
+
+  https://en.cppreference.com/w/cpp/numeric/bit_ceil
+
 *********************************************************/
 
 template <typename SizeType, SizeType MinValue = 0, bool NonPower2 = false>
 inline
 typename jstd::make_size_t<SizeType>::type
-round_up(SizeType N)
+round_up(SizeType x)
 {
     static_assert(std::is_integral<SizeType>::value,
                   "Error: jstd::Power2::round_up(SizeType n) -- n must be a integral type.");
@@ -186,7 +190,7 @@ round_up(SizeType N)
     static constexpr size_type kMaxNumber = (std::numeric_limits<size_type>::max)();
     static constexpr size_type kMaxValue = kMaxNumber / 2 + 1;
 
-    size_type n = static_cast<size_type>(N);
+    size_type n = static_cast<size_type>(x);
     if ((n < kMaxValue) || (sizeof(size_type) > 4)) {
         if (NonPower2) {
             assert(!Bits::is_power2(n));

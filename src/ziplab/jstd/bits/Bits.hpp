@@ -77,23 +77,24 @@ namespace Bits {
 // Look-up table Popcount
 //
 
-static const char * const s_bitsPerByte =
-    "\0\1\1\2\1\2\2\3\1\2\2\3\2\3\3\4"
-    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-    "\4\5\5\6\5\6\6\7\5\6\6\7\6\7\7\x8";
+alignas(64) static const uint8_t s_bitsPerByte[256] = {
+    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
+};
 
 static inline
 uint32_t lookup_popcnt8(uint8_t n)
@@ -106,8 +107,8 @@ static inline
 uint32_t lookup_popcnt16(uint16_t n)
 {
     uint32_t popcnt16 = 0;
-    popcnt16 += static_cast<uint32_t>(s_bitsPerByte[(n     ) & 0x00FFu]);
-    popcnt16 += static_cast<uint32_t>(s_bitsPerByte[(n >> 8) & 0x00FFu]);
+    popcnt16 += static_cast<uint32_t>(s_bitsPerByte[(n     ) & 0x00FF]);
+    popcnt16 += static_cast<uint32_t>(s_bitsPerByte[(n >> 8) & 0x00FF]);
     return popcnt16;
 }
 
@@ -149,6 +150,27 @@ uint32_t lookup_popcnt64(uint64_t n)
 // Parallel Popcount
 //
 static inline
+uint32_t parallel_popcnt8(uint8_t n)
+{
+    n = (n & 0x55) + ((n >> 1) & 0x55);
+    n = (n & 0x33) + ((n >> 2) & 0x33);
+    n = (n & 0x0F) + ((n >> 4) & 0x0F);
+    assert(n >= 0 && n <= 8);
+    return static_cast<uint32_t>(n);
+}
+
+static inline
+uint32_t parallel_popcnt16(uint16_t n)
+{
+    n = (n & 0x5555) + ((n >> 1) & 0x5555);
+    n = (n & 0x3333) + ((n >> 2) & 0x3333);
+    n = (n & 0x0F0F) + ((n >> 4) & 0x0F0F);
+    n = (n & 0x00FF) + ((n >> 8) & 0x00FF);
+    assert(n >= 0 && n <= 16);
+    return static_cast<uint32_t>(n);
+}
+
+static inline
 uint32_t parallel_popcnt32(uint32_t n)
 {
     n = (n & 0x55555555UL) + ((n >>  1U) & 0x55555555UL);
@@ -183,6 +205,85 @@ uint32_t parallel_popcnt(size_t n)
 #endif
 }
 
+/******************************************************************
+
+ SWAR popcount (SIMD Within A Register)
+
+ From: https://nimrod.blog/posts/algorithms-behind-popcount/
+
+******************************************************************/
+
+static inline
+uint32_t swar_popcnt8(uint8_t n)
+{
+    static const uint8_t MAX_UINT8 = std::numeric_limits<uint8_t>::max();
+    static const uint8_t MASK_01010101 = MAX_UINT8 / 3;
+    static const uint8_t MASK_00110011 = MAX_UINT8 / 5;
+    static const uint8_t MASK_00001111 = MAX_UINT8 / 17;
+    n = (n & MASK_01010101) + ((n >> 1) & MASK_01010101);
+    n = (n & MASK_00110011) + ((n >> 2) & MASK_00110011);
+    // n = (n & MASK_00001111) + ((n >> 4) & MASK_00001111);
+    n = ((n + (n >> 4)) & MASK_00001111);
+    assert(n >= 0 && n <= 8);
+    return static_cast<uint32_t>(n);
+}
+
+static inline
+uint32_t swar_popcnt16(uint16_t n)
+{
+    static const uint16_t MAX_UINT16 = std::numeric_limits<uint16_t>::max();
+    static const uint16_t MASK_01010101 = MAX_UINT16 / 3;
+    static const uint16_t MASK_00110011 = MAX_UINT16 / 5;
+    static const uint16_t MASK_00001111 = MAX_UINT16 / 17;
+    n = (n & MASK_01010101) + ((n >> 1) & MASK_01010101);
+    n = (n & MASK_00110011) + ((n >> 2) & MASK_00110011);
+    n = (n & MASK_00001111) + ((n >> 4) & MASK_00001111);
+    // n = (n * 0x0101) >> 8;
+    n = (n + (n >> 8)) & 0x00FF;
+    assert(n >= 0 && n <= 16);
+    return static_cast<uint32_t>(n);
+}
+
+static inline
+uint32_t swar_popcnt32(uint32_t n)
+{
+    static const uint32_t MAX_UINT32 = std::numeric_limits<uint32_t>::max();
+    static const uint32_t MASK_01010101 = MAX_UINT32 / 3;
+    static const uint32_t MASK_00110011 = MAX_UINT32 / 5;
+    static const uint32_t MASK_00001111 = MAX_UINT32 / 17;
+    n = (n & MASK_01010101) + ((n >> 1) & MASK_01010101);
+    n = (n & MASK_00110011) + ((n >> 2) & MASK_00110011);
+    n = (n & MASK_00001111) + ((n >> 4) & MASK_00001111);
+    n = (n * 0x01010101u) >> 24;
+    assert(n >= 0 && n <= 32);
+    return n;
+}
+
+static inline
+uint32_t swar_popcnt64(uint64_t n)
+{
+    static const uint64_t MAX_UINT64 = std::numeric_limits<uint64_t>::max();
+    static const uint64_t MASK_01010101 = MAX_UINT64 / 3;
+    static const uint64_t MASK_00110011 = MAX_UINT64 / 5;
+    static const uint64_t MASK_00001111 = MAX_UINT64 / 17;
+    n = (n & MASK_01010101) + ((n >> 1) & MASK_01010101);
+    n = (n & MASK_00110011) + ((n >> 2) & MASK_00110011);
+    n = (n & MASK_00001111) + ((n >> 4) & MASK_00001111);
+    n = (n * 0x0101010101010101ull) >> 56;
+    assert(n >= 0 && n <= 64);
+    return static_cast<uint32_t>(n);
+}
+
+static inline
+uint32_t swar_popcnt(size_t n)
+{
+#if (ZIPLAB_WORD_LEN == 32)
+    return swar_popcnt32(static_cast<uint32_t>(n));
+#else
+    return swar_popcnt64(static_cast<uint64_t>(n));
+#endif
+}
+
 /*****************************************************************
 
   Hacker Popcount
@@ -191,14 +292,37 @@ uint32_t parallel_popcnt(size_t n)
 *****************************************************************/
 
 static inline
+uint32_t hacker_popcnt8(uint8_t n)
+{
+    n = ( n         - ((n >> 1)  & 0x55));
+    n = ((n & 0x33) + ((n >> 2)  & 0x33));
+    n = ((n         +  (n >> 4)) & 0x0F0F);
+    n =  (n & 0x0F);
+    assert(n >= 0 && n <= 8);
+    return n;
+}
+
+static inline
+uint32_t hacker_popcnt16(uint16_t n)
+{
+    n  = ( n           - ((n >> 1)  & 0x5555));
+    n  = ((n & 0x3333) + ((n >> 2)  & 0x3333));
+    n  = ((n           +  (n >> 4)) & 0x0F0F);
+    n +=  (n >> 8);
+    n  =  (n & 0x001F);
+    assert(n >= 0 && n <= 16);
+    return n;
+}
+
+static inline
 uint32_t hacker_popcnt32(uint32_t n)
 {
-    n -=  ((n >> 1U) & 0x55555555U);
-    n  = (((n >> 2U) & 0x33333333U) + (n & 0x33333333U));
-    n  = (((n >> 4U) + n) & 0x0F0F0F0FU);
-    n +=   (n >> 8U);
-    n +=   (n >> 16U);
-    n  = (n & 0x0000003FU);
+    n  = ( n                - ((n >> 1U)  & 0x55555555U));
+    n  = ((n & 0x33333333U) + ((n >> 2U)  & 0x33333333U));
+    n  = ((n                +  (n >> 4U)) & 0x0F0F0F0FU);
+    n +=  (n >> 8U);
+    n +=  (n >> 16U);
+    n  =  (n & 0x0000003FU);
     assert(n >= 0 && n <= 32);
     return n;
 }
@@ -206,13 +330,13 @@ uint32_t hacker_popcnt32(uint32_t n)
 static inline
 uint32_t hacker_popcnt64(uint64_t n)
 {
-    n -=  ((n >> 1U) & 0x5555555555555555ULL);
-    n  = (((n >> 2U) & 0x3333333333333333ULL) + (n & 0x3333333333333333ULL));
-    n  = (((n >> 4U) + n) & 0x0F0F0F0F0F0F0F0FULL);
-    n +=   (n >> 8U);
-    n +=   (n >> 16U);
-    n +=   (n >> 32U);
-    n  = (n & 0x000000000000007FULL);
+    n  = ( n                          - ((n >> 1U)  & 0x5555555555555555ULL));
+    n  = ((n & 0x3333333333333333ULL) + ((n >> 2U)  & 0x3333333333333333ULL));
+    n  = ((n                          +  (n >> 4U)) & 0x0F0F0F0F0F0F0F0FULL);
+    n +=  (n >> 8U);
+    n +=  (n >> 16U);
+    n +=  (n >> 32U);
+    n  =  (n & 0x000000000000007FULL);
     assert(n >= 0 && n <= 64);
     return static_cast<uint32_t>(n);
 }
@@ -234,6 +358,35 @@ uint32_t hacker_popcnt(size_t n)
 /////////////////////////////////////////////////////
 
 static inline
+uint32_t nifty_popcnt8(uint8_t n)
+{
+    static const uint8_t MAX_UINT8 = std::numeric_limits<uint8_t>::max();
+    static const uint8_t MASK_01010101 = MAX_UINT8 / 3;
+    static const uint8_t MASK_00110011 = MAX_UINT8 / 5;
+    static const uint8_t MASK_00001111 = MAX_UINT8 / 17;
+    n = (n & MASK_01010101) + ((n >> 1) & MASK_01010101);
+    n = (n & MASK_00110011) + ((n >> 2) & MASK_00110011);
+    n = (n % 15);
+    assert(n >= 0 && n <= 8);
+    return static_cast<uint32_t>(n);
+}
+
+static inline
+uint32_t nifty_popcnt16(uint16_t n)
+{
+    static const uint16_t MAX_UINT16 = std::numeric_limits<uint16_t>::max();
+    static const uint16_t MASK_01010101 = MAX_UINT16 / 3;
+    static const uint16_t MASK_00110011 = MAX_UINT16 / 5;
+    static const uint16_t MASK_00001111 = MAX_UINT16 / 17;
+    n = (n & MASK_01010101) + ((n >> 1) & MASK_01010101);
+    n = (n & MASK_00110011) + ((n >> 2) & MASK_00110011);
+    n = (n & MASK_00001111) + ((n >> 4) & MASK_00001111);
+    n = (n % 255);
+    assert(n >= 0 && n <= 16);
+    return static_cast<uint32_t>(n);
+}
+
+static inline
 uint32_t nifty_popcnt32(uint32_t n)
 {
     static const uint32_t MAX_UINT32 = std::numeric_limits<uint32_t>::max();
@@ -243,7 +396,9 @@ uint32_t nifty_popcnt32(uint32_t n)
     n = (n & MASK_01010101) + ((n >> 1) & MASK_01010101);
     n = (n & MASK_00110011) + ((n >> 2) & MASK_00110011);
     n = (n & MASK_00001111) + ((n >> 4) & MASK_00001111);
-    return (n % 255);
+    n = (n % 255);
+    assert(n >= 0 && n <= 32);
+    return n;
 }
 
 static inline
@@ -256,7 +411,9 @@ uint32_t nifty_popcnt64(uint64_t n)
     n = (n & MASK_01010101) + ((n >> 1) & MASK_01010101);
     n = (n & MASK_00110011) + ((n >> 2) & MASK_00110011);
     n = (n & MASK_00001111) + ((n >> 4) & MASK_00001111);
-    return (n % 511);
+    n = (n % 255);
+    assert(n >= 0 && n <= 64);
+    return static_cast<uint32_t>(n);
 }
 
 static inline
@@ -274,15 +431,15 @@ uint32_t nifty_popcnt(size_t n)
 Hakmem Popcount
 
 Consider a 3 bit number as being
-    4a+2b+c
+    4a + 2b + c
 if we shift it right 1 bit, we have
-    2a+b
+    2a + b
 subtracting this from the original gives
-    2a+b+c
+    2a + b + c
 if we shift the original 2 bits right we get
     a
 and so with another subtraction we have
-    a+b+c
+    a + b + c
 which is the number of bits in the original number.
 
 Suitable masking  allows the sums of  the octal digits  in a 32 bit  number to
@@ -333,18 +490,28 @@ uint32_t hakmem_popcnt(size_t n)
 //
 // Assembly Popcount
 //
+// https://gcc.gnu.org/onlinedocs/gcc-4.3.0/gcc/X86-Built_002din-Functions.html
+//
 
 static inline
 uint32_t assembly_popcnt32(uint32_t n)
 {
+#if defined(__POPCNT__) || defined(__SSE4_2__)
     int popcnt = _mm_popcnt_u32(static_cast<unsigned int>(n));
+#else
+    int popcnt = __builtin_popcount(static_cast<unsigned int>(n));
+#endif
     return static_cast<uint32_t>(popcnt);
 }
 
 static inline
 uint32_t assembly_popcnt64(uint64_t n)
 {
+#if defined(__POPCNT__) || defined(__SSE4_2__)
     long long popcnt = _mm_popcnt_u64(static_cast<unsigned long long>(n));
+#else
+    long long popcnt = __builtin_popcountll(static_cast<unsigned long long>(n));
+#endif
     return static_cast<uint32_t>(popcnt);
 }
 
