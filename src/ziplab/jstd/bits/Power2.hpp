@@ -193,7 +193,7 @@ round_up(SizeType x)
     size_type n = static_cast<size_type>(x);
     if ((n < kMaxValue) || (sizeof(size_type) > 4)) {
         if (NonPower2) {
-            assert(!Bits::is_power2(n));
+            assert(!Power2::is_power2(n));
             if ((MinValue > 0) || (n > 0)) {
                 assert(n > 0);
                 std::uint32_t ms1b_pos = Bits::bitScanReverse(n);

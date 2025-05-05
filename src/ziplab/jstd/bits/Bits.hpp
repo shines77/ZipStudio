@@ -207,9 +207,10 @@ uint32_t parallel_popcnt(size_t n)
 
 /******************************************************************
 
- SWAR popcount (SIMD Within A Register)
+ SWAR Popcount (SIMD Within A Register)
 
  From: https://nimrod.blog/posts/algorithms-behind-popcount/
+       https://en.wikipedia.org/wiki/SWAR
 
 ******************************************************************/
 
@@ -353,7 +354,7 @@ uint32_t hacker_popcnt(size_t n)
 
 /////////////////////////////////////////////////////
 //
-// nifty popcount
+// Nifty Popcount
 //
 /////////////////////////////////////////////////////
 
