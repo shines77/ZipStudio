@@ -59,7 +59,7 @@ static inline
 bool is_power2_v2(T n) {
     static_assert(std::is_integral<T>::value,
                   "Error: jstd::Power2::is_power2(T n) -- n must be a integral type.");
-    typedef typename std::make_size_t<T>::type size_type;
+    typedef typename jstd::make_size_t<T>::type size_type;
     size_type x = static_cast<size_type>(n);
     return (Bits::popcnt(x) == 1);
 }

@@ -114,12 +114,12 @@ public:
     // Unsafe write value
     template <typename T>
     void unsafeWriteValue(const T & val) {
-        buffer_.unsafeWriteValue(val);
+        this->buffer_.unsafeWriteValue(val);
     }
 
     template <typename T>
     void unsafeWriteValue(T && val) {
-        buffer_.unsafeWriteValue(std::forward<T>(val));
+        this->buffer_.unsafeWriteValue(std::forward<T>(val));
     }
 
     void unsafeWriteBool(std::uint8_t byte) {
@@ -203,12 +203,12 @@ public:
     // Safety write value
     template <typename T>
     void writeValue(const T & val) {
-        buffer_.writeValue(val);
+        this->buffer_.writeValue(val);
     }
 
     template <typename T>
     void writeValue(T && val) {
-        buffer_.writeValue(std::forward<T>(val));
+        this->buffer_.writeValue(std::forward<T>(val));
     }
 
     bool writeBool(bool b) {
