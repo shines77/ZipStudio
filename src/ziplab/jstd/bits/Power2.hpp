@@ -17,16 +17,51 @@
 namespace jstd {
 namespace Power2 {
 
+//
+// Checks if a number is an integral power of 2 or equal to 0.
+//
+// Similar to std::has_single_bit(x) and (x == 0) in C++ 20.
+//
+template <typename T>
+static inline
+bool is_power2_or_0(T n) {
+    static_assert(std::is_integral<T>::value,
+                  "Error: jstd::Power2::is_power2_or_0(T n) -- n must be a integral type.");
+    typedef typename std::make_unsigned<T>::type unsigned_type;
+    unsigned_type x = static_cast<unsigned_type>(n);
+    return ((x & (x - 1)) == 0);
+}
+
+//
+// Checks if a number is an integral power of 2.
+//
+// Similar to std::has_single_bit(x) in C++ 20.
+//
+// https://en.cppreference.com/w/cpp/numeric/has_single_bit
+//
 template <typename T>
 static inline
 bool is_power2(T n) {
-    return ((n & (n - 1)) == 0);
+    static_assert(std::is_integral<T>::value,
+                  "Error: jstd::Power2::is_power2(T n) -- n must be a integral type.");
+    return ((n != 0) && is_power2_or_0(n));
 }
 
+//
+// Checks if a number is an integral power of 2.
+//
+// Similar to std::has_single_bit(x) in C++ 20.
+//
+// https://en.cppreference.com/w/cpp/numeric/has_single_bit
+//
 template <typename T>
 static inline
-bool is_power2_not_0(T n) {
-    return (is_power2(n) && (n != 0));
+bool is_power2_v2(T n) {
+    static_assert(std::is_integral<T>::value,
+                  "Error: jstd::Power2::is_power2(T n) -- n must be a integral type.");
+    typedef typename std::make_size_t<T>::type size_type;
+    size_type x = static_cast<size_type>(n);
+    return (Bits::popcnt(x) == 1);
 }
 
 //
@@ -163,6 +198,8 @@ uint64_t round_up_64(uint64_t n)
 
 /*********************************************************
 
+  Finds the smallest integral power of 2 not less than the given value.
+
   N = round_up(n) = 2 ^ (|Log2(n - 1)| + 1)
 
   eg:
@@ -183,9 +220,9 @@ round_up(SizeType x)
 {
     static_assert(std::is_integral<SizeType>::value,
                   "Error: jstd::Power2::round_up(SizeType n) -- n must be a integral type.");
-    typedef typename jstd::make_size_t<SizeType>::type  size_type;
+    typedef typename jstd::make_size_t<SizeType>::type size_type;
 #ifndef NDEBUG
-    typedef typename std::make_signed<size_type>::type  signed_type;
+    typedef typename std::make_signed<size_type>::type signed_type;
 #endif
     static constexpr size_type kMaxNumber = (std::numeric_limits<size_type>::max)();
     static constexpr size_type kMaxValue = kMaxNumber / 2 + 1;
@@ -194,7 +231,7 @@ round_up(SizeType x)
     if ((n < kMaxValue) || (sizeof(size_type) > 4)) {
         if (NonPower2) {
             assert(!Power2::is_power2(n));
-            if ((MinValue > 0) || (n > 0)) {
+            if (ziplab_likely((MinValue > 0) || (n > 0))) {
                 assert(n > 0);
                 std::uint32_t ms1b_pos = Bits::bitScanReverse(n);
                 return (static_cast<size_type>(1) << (ms1b_pos + 1));
@@ -202,6 +239,16 @@ round_up(SizeType x)
                 return static_cast<size_type>(n);
             }
         } else {
+#if 1
+            if (ziplab_likely(Power2::is_power2_or_0(n))) {
+                return static_cast<size_type>(n);
+            } else {
+                assert(n > 0);
+                assert(!Power2::is_power2(n));
+                std::uint32_t ms1b_pos = Bits::bitScanReverse(n);
+                return (static_cast<size_type>(1) << (ms1b_pos + 1));
+            }
+#else
             if ((MinValue >= 2) || (n >= 2)) {
                 assert(signed_type(n - 1) > 0);
                 std::uint32_t ms1b_pos = Bits::bitScanReverse(n - 1);
@@ -209,6 +256,7 @@ round_up(SizeType x)
             } else {
                 return static_cast<size_type>(n);
             }
+#endif
         }
     }
     else {
