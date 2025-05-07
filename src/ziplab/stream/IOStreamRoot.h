@@ -133,8 +133,8 @@ public:
     // Expand space for delta_size elements
     // and preserving existing data, without initializing new elements.
     //
-    bool grow(size_type delta_size) {
-        return buffer_.grow(delta_size);
+    void grow(size_type delta_size) {
+        buffer_.grow(delta_size);
     }
 
     //
@@ -237,6 +237,42 @@ public:
 
     void seek_to(index_type pos) {
         pos_ = pos;
+    }
+
+    // Unsafe write
+    inline void unsafeWrite(const char_type * data, size_type size) {
+        buffer_.unsafeWrite(data, size);
+    }
+
+    template <typename Allocator>
+    void unsafeWrite(const std::basic_string<char_type, traits_type, Allocator> & str) {
+        unsafeWrite(str.c_str(), str.size());
+    }
+
+    void unsafeWrite(const memory_buffer_t & buffer) {
+        unsafeWrite(buffer.data(), buffer.size());
+    }
+
+    void unsafeWrite(const memory_view_t & buffer) {
+        unsafeWrite(buffer.data(), buffer.size());
+    }
+
+    // Safety write
+    void write(const char_type * data, size_type size) {
+        buffer_.write(data, size);
+    }
+
+    template <typename Allocator>
+    void write(const std::basic_string<char_type, traits_type, Allocator> & str) {
+        write(str.c_str(), str.size());
+    }
+
+    void write(const memory_buffer_t & buffer) {
+        write(buffer.data(), buffer.size());
+    }
+
+    void write(const memory_view_t & buffer) {
+        write(buffer.data(), buffer.size());
     }
 
 protected:

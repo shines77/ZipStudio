@@ -142,7 +142,7 @@ public:
         }
     }
 
-    inline bool if_need_grow(size_type delta_size) const {
+    inline bool need_grow(size_type delta_size) const {
         size_type new_size = this->size() + delta_size;
         return (new_size > this->capacity());
     }
@@ -163,13 +163,12 @@ public:
     // Expand space for at least delta_size elements
     // and preserving existing data, without initializing new elements.
     //
-    bool grow(size_type delta_size) {
+    void grow(size_type delta_size) {
         size_type new_size = this->size() + delta_size;
         if (ziplab_likely(new_size <= this->capacity())) {
-            return false;
+            return;
         } else {
             grow_impl(new_size);
-            return true;
         }
     }
 
@@ -273,26 +272,65 @@ public:
         this->forward(step);
     }
 
+    // Unsafe write
     void unsafeWrite(char_type ch) {
-        unsafe_write_value(ch);
+        unsafeWriteValue(ch);
     }
 
-    void write(char_type ch) {
-        size_type delta_size = sizeof(char_type);
-        if (ziplab_likely(!if_need_grow(delta_size))) {
-            unsafe_write(ch);
+    void unsafeWrite(const char_type * data, size_type count) {
+        assert((this->size() + count) <= this->capacity());
+#if 1
+        char_type * curr = this->current();
+        traits_type::copy(curr, data, count);
+#else
+        char_type * curr = this->current();
+        std::memcpy((void *)curr, (const void *)data, count * sizeof(char_type));
+#endif
+        this->forward(count);
+    }
+
+    // Safety write value
+    template <typename T>
+    void writeValue(const T & val) {
+        using value_type = typename std::remove_reference<T>::type;
+        static constexpr size_type delta_size = sizeof(value_type);
+        if (ziplab_likely(!need_grow(delta_size))) {
+            unsafeWriteValue(val);
         } else {
             grow_impl(delta_size);
-            unsafe_write(ch);
+            unsafeWriteValue(val);
+        }
+    }
+
+    template <typename T>
+    void writeValue(T && val) {
+        using value_type = typename std::remove_reference<T>::type;
+        static constexpr size_type delta_size = sizeof(value_type);
+        if (ziplab_likely(!need_grow(delta_size))) {
+            unsafeWriteValue(std::forward<T>(val));
+        } else {
+            grow_impl(delta_size);
+            unsafeWriteValue(std::forward<T>(val));
+        }
+    }
+
+    // Safety write
+    void write(char_type ch) {
+        static constexpr size_type delta_size = sizeof(char_type);
+        if (ziplab_likely(!need_grow(delta_size))) {
+            unsafeWrite(ch);
+        } else {
+            grow_impl(delta_size);
+            unsafeWrite(ch);
         }
     }
 
     void write(const char_type * data, size_type count) {
-        if (ziplab_likely(!if_need_grow(count))) {
-            unsafe_write(data, count);
+        if (ziplab_likely(!need_grow(count))) {
+            unsafeWrite(data, count);
         } else {
             grow_impl(count);
-            unsafe_write(data, count);
+            unsafeWrite(data, count);
         }
     }
 
@@ -310,11 +348,16 @@ private:
     // Normalize capacity size, don't allowing a capacity of 0.
     static inline size_type round_capacity(size_type capacity) {
         // If not a power of two
+#if 1
+        // The capacity can be 0.
+        capacity = jstd::Power2::round_up<size_type, 0, false>(capacity);
+#else
         assert(capacity > 0);
         capacity = (std::min)(capacity, kMinCapacity);
         if ((capacity & (capacity - 1)) != 0) {
             capacity = jstd::Power2::round_up<size_type, kMinCapacity, true>(capacity);
         }
+#endif
         return capacity;
     }
 
@@ -337,6 +380,7 @@ private:
     inline void grow_impl(size_type delta_size) {
         size_type new_size = this->size() + delta_size;
         size_type new_capacity = this->capacity() * 2;
+        assert(new_size > this->capacity());
         if (ziplab_unlikely(new_size >= new_capacity)) {
             if (new_size > new_capacity)
                 new_capacity = round_capacity(new_size);

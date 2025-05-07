@@ -98,88 +98,28 @@ public:
         lhs.swap(rhs);
     }
 
+    using super_type::unsafeWrite;
+    using super_type::write;
+
     // Unsafe write
-    inline void unsafeWrite(const char_type * data, size_type size) {
-        index_type s_size = static_cast<index_type>(size);
-        assert((this->pos() + s_size) <= this->ssize());
-#if 1
-        char_type * curr = this->current();
-        traits_type::copy(curr, data, size);
-#else
-        char_type * curr = this->current();
-        std::memcpy((void *)curr, (const void *)data, size * sizeof(char_type));
-#endif
-        this->forward(size);
-    }
-
-    template <typename Allocator>
-    void unsafeWrite(const std::basic_string<char_type, traits_type, Allocator> & str) {
-        unsafeWrite(str.c_str(), str.size());
-    }
-
-    void unsafeWrite(const memory_buffer_t & buffer) {
-        unsafeWrite(buffer.data(), buffer.size());
-    }
-
-    void unsafeWrite(const memory_view_t & buffer) {
-        unsafeWrite(buffer.data(), buffer.size());
-    }
-
     void unsafeWrite(const BasicOutputStream & out) {
-        unsafeWrite(out.data(), out.size());
+        this->unsafeWrite(out.data(), out.size());
     }
 
     // Safety write
-    bool write(const char_type * data, size_type size) {
-        index_type s_size = static_cast<index_type>(size);
-        if ((this->pos() + s_size) <= this->ssize()) {
-            unsafeWrite(data, size);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    template <typename Allocator>
-    bool write(const std::basic_string<char_type, traits_type, Allocator> & str) {
-        return write(str.c_str(), str.size());
-    }
-
-    bool write(const memory_buffer_t & buffer) {
-        return write(buffer.data(), buffer.size());
-    }
-
-    bool write(const memory_view_t & buffer) {
-        return write(buffer.data(), buffer.size());
-    }
-
     bool write(const BasicOutputStream & out) {
-        return write(out.data(), out.size());
+        return this->write(out.data(), out.size());
     }
 
     // Unsafe write value
     template <typename T>
     void unsafeWriteValue(const T & val) {
-        using value_type = typename std::remove_reference<T>::type;
-        static constexpr index_type step = sizeof(value_type);
-        assert(this->pos() >= 0);
-        assert((this->pos() + step) <= this->ssize());
-
-        char_type * curr = this->current();
-        *(reinterpret_cast<value_type *>(curr)) = val;
-        this->forward(step);
+        buffer_.unsafeWriteValue(val);
     }
 
     template <typename T>
     void unsafeWriteValue(T && val) {
-        using value_type = typename std::remove_reference<T>::type;
-        static constexpr index_type step = sizeof(value_type);
-        assert(this->pos() >= 0);
-        assert((this->pos() + step) <= this->ssize());
-
-        char_type * curr = this->current();
-        *(reinterpret_cast<value_type *>(curr)) = std::forward<T>(val);
-        this->forward(step);
+        buffer_.unsafeWriteValue(std::forward<T>(val));
     }
 
     void unsafeWriteBool(std::uint8_t byte) {
@@ -262,29 +202,13 @@ public:
 
     // Safety write value
     template <typename T>
-    bool writeValue(const T & val) {
-        using value_type = typename std::remove_reference<T>::type;
-        static constexpr index_type step = sizeof(value_type);
-        assert(this->pos() >= 0);
-        if ((this->pos() + step) <= this->ssize()) {
-            unsafeWriteValue(val);
-            return true;
-        } else {
-            return false;
-        }
+    void writeValue(const T & val) {
+        buffer_.writeValue(val);
     }
 
     template <typename T>
-    bool writeValue(T && val) {
-        using value_type = typename std::remove_reference<T>::type;
-        static constexpr index_type step = sizeof(value_type);
-        assert(this->pos() >= 0);
-        if ((this->pos() + step) <= this->ssize()) {
-            unsafeWriteValue(std::forward<T>(val));
-            return true;
-        } else {
-            return false;
-        }
+    void writeValue(T && val) {
+        buffer_.writeValue(std::forward<T>(val));
     }
 
     bool writeBool(bool b) {

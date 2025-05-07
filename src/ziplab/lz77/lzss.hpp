@@ -209,11 +209,12 @@ public:
                 }
 
                 // Output flag bits and block data
-                size_type flag_capacity = 0;
-                if (compressed_os.grow(flag_capacity + block_capacity)) {
-                    output_flag_bits(compressed_os, flag_bits, block_capacity);
-                    compressed_os.unsafeWrite(block_data);
-                }
+                static constexpr size_type flag_capacity = (kBlockDataSize + (CHAR_BIT - 1)) / CHAR_BIT;
+                // Allocate the size of data to be added in advance
+                compressed_os.grow(flag_capacity + block_capacity);
+
+                unsafe_output_flag_bits(compressed_os, flag_bits, block_capacity);
+                compressed_os.unsafeWrite(block_data);
 
                 flag_bits.reset();
                 block_data.clear();
@@ -246,9 +247,22 @@ public:
     }
 
 private:
-    inline size_type output_flag_bits(OutputStream & compressedOs,
-                                      const jstd::bitset<kBlockFlagSize> & flag_bits,
-                                      size_type flag_capacity) {
+    inline size_type unsafe_output_flag_bits(OutputStream & compressedOs,
+                                             const jstd::bitset<kBlockFlagSize> & flag_bits,
+                                             size_type flag_capacity) {
+        assert(flag_capacity <= kBlockFlagSize);
+        size_type num_bytes = (flag_capacity + (CHAR_BIT - 1)) / CHAR_BIT;
+        assert((compressedOs.size() + num_bytes) < compressedOs.capacity());
+
+        //assert(num_bytes == flag_bits.bytes());
+        compressedOs.write(flag_bits.data(), num_bytes);
+
+        return num_bytes;
+    }
+
+    inline size_type safe_output_flag_bits(OutputStream & compressedOs,
+                                           const jstd::bitset<kBlockFlagSize> & flag_bits,
+                                           size_type flag_capacity) {
         assert(flag_capacity <= kBlockFlagSize);
         size_type num_bytes = (flag_capacity + (CHAR_BIT - 1)) / CHAR_BIT;
 
