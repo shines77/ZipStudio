@@ -90,7 +90,7 @@ public:
     char_type * current() { return buffer_.current(); }
     const char_type * current() const { return buffer_.current(); }
 
-    char_type * tail() { return buffer_.tail() }
+    char_type * tail() { return buffer_.tail(); }
     const char_type * tail() const { return buffer_.tail(); }
 
     void destroy() {

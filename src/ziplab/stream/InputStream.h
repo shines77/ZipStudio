@@ -64,6 +64,9 @@ public:
         //destroy();
     }
 
+    index_type pos() const { return pos_; }
+    size_type npos() const { return static_cast<size_type>(pos()); }
+
     // Get the base class pointrt
     super_type * super(this_type * derived) {
         return static_cast<super_type *>(derived);
@@ -129,7 +132,7 @@ public:
     void unsafeSkipValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        assert((pos_ + step) <= this->ssize());
+        assert((pos() + step) <= this->ssize());
         ZIPLAB_UNUSED(val);
         pos_ += step;
     }
@@ -254,7 +257,7 @@ public:
     bool skipValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        if ((pos_ + step) <= this->ssize()) {
+        if ((pos() + step) <= this->ssize()) {
             ZIPLAB_UNUSED(val);
             pos_ += step;
             return true;
@@ -348,8 +351,8 @@ public:
     bool peekValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        if ((pos_ + step) <= this->ssize()) {
-            val = *(reinterpret_cast<T *>(this->buffer_.data() + pos_));
+        if ((pos() + step) <= this->ssize()) {
+            val = *(reinterpret_cast<T *>(this->buffer_.data() + pos()));
             return true;
         } else {
             val = T();
@@ -442,8 +445,8 @@ public:
     void unsafePeekValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        assert((pos_ + step) <= this->ssize());
-        val = *(reinterpret_cast<T *>(this->buffer_.data() + pos_));
+        assert((pos() + step) <= this->ssize());
+        val = *(reinterpret_cast<T *>(this->buffer_.data() + pos()));
     }
 
     bool peekBool() {
@@ -566,8 +569,8 @@ public:
     bool readValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        if ((pos_ + step) <= this->ssize()) {
-            val = *(reinterpret_cast<T *>(this->buffer_.data() + pos_));
+        if ((pos() + step) <= this->ssize()) {
+            val = *(reinterpret_cast<T *>(this->buffer_.data() + pos()));
             pos_ += step;
             return true;
         } else {
@@ -782,12 +785,9 @@ public:
     }
 
 protected:
-    inline void clear_data() {
-        //
-    }
-
     inline void copy_data(const BasicInputStream & src) {
         super_ref(this).copy_data(super_ref(&src));
+        this->pos_ = src.pos_;
     }
 
     inline void swap_data(BasicInputStream & other) {
@@ -795,6 +795,7 @@ protected:
         //super_ref(this).swap_data(super_ref(&src));
         using std::swap;
         swap(super_ref(this), super_ref(&other));
+        swap(this->pos_, other.pos_);
     }
 
 private:
