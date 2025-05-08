@@ -44,20 +44,20 @@ public:
     using string_type = std::basic_string<char_type, traits_type>;
     using vector_type = std::vector<char_type>;
 
+    static constexpr size_type nend = static_cast<size_type>(-1);
+
 protected:
     buffer_type & buffer_;
-    index_type    pos_;
 
 public:
-    BasicIOStreamRoot(buffer_type & buffer) : buffer_(buffer), pos_(0) {
+    BasicIOStreamRoot(buffer_type & buffer) : buffer_(buffer) {
     }
 
     BasicIOStreamRoot(const BasicIOStreamRoot & src)
-        : buffer_(src.buffer()), pos_(src.pos()) {
+        : buffer_(src.buffer()) {
     }
     BasicIOStreamRoot(BasicIOStreamRoot && src)
-        : buffer_(std::forward<memory_buffer_t>(src.buffer())),
-          pos_(src.pos()) {
+        : buffer_(std::forward<memory_buffer_t>(src.buffer())) {
     }
 
     ~BasicIOStreamRoot() {
@@ -73,40 +73,28 @@ public:
 
     size_type size() const { return buffer_.size(); }
     size_type capacity() const { return buffer_.capacity(); }
-    index_type pos() const { return pos_; }
 
     index_type ssize() const { return buffer_.ssize(); }
     index_type scapacity() const { return buffer_.scapacity(); }
-    size_type upos() const { return static_cast<size_type>(pos_); }
 
     memory_buffer_t & buffer() { return buffer_; }
     const memory_buffer_t & buffer() const { return buffer_; }
 
     // Position
-    char_type * current() { return (buffer_.data() + pos()); }
-    const char_type * current() const { return (buffer_.data() + pos()); }
+    char_type * begin() { return buffer_.begin(); }
+    const char_type * begin() const { return buffer_.begin(); }
 
-    char_type * begin() { return buffer_.data(); }
-    const char_type * begin() const { return buffer_.data(); }
+    char_type * end() { return buffer_.end(); }
+    const char_type * end() const { return buffer_.end(); }
 
-    char_type * end() { return (buffer_.data() + size()); }
-    const char_type * end() const { return (buffer_.data() + size()); }
+    char_type * current() { return buffer_.current(); }
+    const char_type * current() const { return buffer_.current(); }
 
-    char_type * tail() { return (buffer_.data() + buffer_.size()); }
-    const char_type * tail() const { return (buffer_.data() + buffer_.size()); }
+    char_type * tail() { return buffer_.tail() }
+    const char_type * tail() const { return buffer_.tail(); }
 
     void destroy() {
         buffer_.destroy();
-        reset();
-    }
-
-    void reset() {
-        pos_ = 0;
-    }
-
-    size_type calc_capacity(size_type new_size) {
-        size_type new_capacity = 0;
-        return new_capacity;
     }
 
     //
@@ -115,8 +103,6 @@ public:
     //
     void prepare(size_type new_capacity) {
         buffer_.prepare(new_capacity);
-        assert(size() <= capacity());
-        assert(pos() <= ssize());
     }
 
     //
@@ -125,8 +111,6 @@ public:
     //
     void reserve(size_type new_capacity) {
         buffer_.reserve(new_capacity);
-        assert(size() <= capacity());
-        assert(pos() <= ssize());
     }
 
     //
@@ -147,7 +131,6 @@ public:
     //
     void resize_discard(size_type new_size, char_type init_val = 0) {
         buffer_.resize_discard(new_size, init_val);
-        reset();
     }
 
     //
@@ -156,14 +139,14 @@ public:
     //
     void resize(size_type new_size, char_type init_val = 0) {
         buffer_.resize(new_size, init_val);
-        if (pos() > ssize()) {
-            pos_ = ssize();
-        }
     }
 
     void clear() {
         buffer_.clear();
-        reset();
+    }
+
+    void clear_all() {
+        buffer_.clear_all();
     }
 
     void copy(const BasicIOStreamRoot & src) {
@@ -182,61 +165,15 @@ public:
         lhs.swap(rhs);
     }
 
-    bool is_underflow() const {
-        return (pos() < 0);
-    }
-
-    template <typename T>
-    bool is_underflow(const T & val) const {
-        ZIPLAB_UNUSED(val);
-        return ((pos() - sizeof(val)) < 0);
-    }
-
+    // Bound checking
     bool is_overflow() const {
-        return (pos() > ssize());
+        return buffer_.is_overflow();
     }
 
     template <typename T>
     bool is_overflow(const T & val) const {
         ZIPLAB_UNUSED(val);
-        return ((pos() + sizeof(val)) > ssize());
-    }
-
-    // Cursor
-    this_type & backward(size_type step) {
-        pos_ -= static_cast<index_type>(step);
-        return *this;
-    }
-
-    this_type & forward(size_type step) {
-        pos_ += static_cast<index_type>(step);
-        return *this;
-    }
-
-    this_type & rewind(offset_type offset) {
-        pos_ -= static_cast<index_type>(offset);
-        return *this;
-    }
-
-    this_type & skip(offset_type offset) {
-        pos_ += static_cast<index_type>(offset);
-        return *this;
-    }
-
-    void seek_to_begin() {
-        pos_ = 0;
-    }
-
-    void seek_to_end() {
-        pos_ = ssize();
-    }
-
-    void seek_to_tail() {
-        pos_ = scapacity();
-    }
-
-    void seek_to(index_type pos) {
-        pos_ = pos;
+        return buffer_.is_overflow(val);
     }
 
     // Unsafe write
@@ -249,12 +186,42 @@ public:
         unsafeWrite(str.c_str(), str.size());
     }
 
+    template <typename StringViewLike>
+    void unsafeWrite(const StringViewLike & sv) {
+        unsafeWrite(sv.c_str(), sv.size());
+    }
+
     void unsafeWrite(const memory_buffer_t & buffer) {
         unsafeWrite(buffer.data(), buffer.size());
     }
 
     void unsafeWrite(const memory_view_t & buffer) {
         unsafeWrite(buffer.data(), buffer.size());
+    }
+
+    template <typename Allocator>
+    void unsafeWrite(const std::basic_string<char_type, traits_type, Allocator> & str,
+                     size_type pos, size_type count = nend) {
+        if (pos < str.size()) {
+            size_type remaining = static_cast<size_type>(str.size() - pos);
+            if (count == nend)
+                count = remaining;
+            else
+                count = (std::min)(remaining, count);
+            unsafeWrite(str.c_str() + pos, count);
+        }
+    }
+
+    template <typename StringViewLike>
+    void unsafeWrite(const StringViewLike & sv, size_type pos, size_type count = nend) {
+        if (pos < sv.size()) {
+            size_type remaining = static_cast<size_type>(sv.size() - pos);
+            if (count == nend)
+                count = remaining;
+            else
+                count = (std::min)(remaining, count);
+            unsafeWrite(sv.c_str() + pos, count);
+        }
     }
 
     // Safety write
@@ -275,23 +242,41 @@ public:
         write(buffer.data(), buffer.size());
     }
 
-protected:
-    inline void clear_data() {
-        //
+    template <typename Allocator>
+    void write(const std::basic_string<char_type, traits_type, Allocator> & str,
+               size_type pos, size_type count = nend) {
+        if (pos < str.size()) {
+            size_type remaining = static_cast<size_type>(str.size() - pos);
+            if (count == nend)
+                count = remaining;
+            else
+                count = (std::min)(remaining, count);
+            write(str.c_str() + pos, count);
+        }
     }
 
+    template <typename StringViewLike>
+    void write(const StringViewLike & sv, size_type pos, size_type count = nend) {
+        if (pos < sv.size()) {
+            size_type remaining = static_cast<size_type>(sv.size() - pos);
+            if (count == nend)
+                count = remaining;
+            else
+                count = (std::min)(remaining, count);
+            write(sv.c_str() + pos, count);
+        }
+    }
+
+protected:
     inline void copy_data(const BasicIOStreamRoot & src) {
         assert(std::addressof(src) != this);
         buffer_.copy(src.buffer());
-        pos_ = src.pos();
     }
 
     inline void swap_data(BasicIOStreamRoot & other) {
         assert(std::addressof(other) != this);
         using std::swap;
         swap(this->buffer_, other.buffer_);
-        swap(this->pos_, other.pos_);
-        swap(this->size_, other.size_);
     }
 
 private:

@@ -98,98 +98,30 @@ public:
         lhs.swap(rhs);
     }
 
-    // Safety skip value
-    template <typename T>
-    bool skipValue(T & val) {
-        static constexpr index_type step = sizeof(T);
-        assert(this->pos() >= 0);
-        if ((pos_ + step) <= this->ssize()) {
-            ZIPLAB_UNUSED(val);
-            pos_ += step;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    bool skipBool(bool & b) {
-        std::uint8_t byte = static_cast<std::uint8_t>(b);
-        bool success = skipValue(byte);
-        b = (byte != 0);
-        return success;
-    }
-
-    bool skipChar(char & ch) {
-        return skipValue(ch);
-    }
-
-    bool skipUChar(unsigned char & ch) {
-        return skipValue(ch);
-    }
-
-    bool skipWChar(wchar_t & wch) {
-        return skipValue(wch);
-    }
-
-    bool skipSByte(std::int8_t & sbyte) {
-        return skipValue(sbyte);
-    }
-
-    bool skipByte(std::uint8_t & byte) {
-        return skipValue(byte);
-    }
-
-    bool skipInt8(std::int8_t & val) {
-        return skipValue(val);
-    }
-
-    bool skipUInt8(std::uint8_t & val) {
-        return skipValue(val);
-    }
-
-    bool skipInt16(std::int16_t & val) {
-        return skipValue(val);
-    }
-
-    bool skipUInt16(std::uint16_t & val) {
-        return skipValue(val);
-    }
-
-    bool skipInt32(std::int32_t & val) {
-        return skipValue(val);
-    }
-
-    bool skipUInt32(std::uint32_t & val) {
-        return skipValue(val);
-    }
-
-    bool skipInt64(std::int64_t & val) {
-        return skipValue(val);
-    }
-
-    bool skipUInt64(std::uint64_t & val) {
-        return skipValue(val);
-    }
-
-    bool skipSizeT(std::size_t & val) {
-        return skipValue(val);
-    }
-
-    bool skipFloat(float & val) {
-        return skipValue(val);
-    }
-
-    bool skipDouble(double & val) {
-        return skipValue(val);
-    }
-
-    bool skipVoidPtr(void * & pt) {
-        return skipValue(pt);
+    // Bound checking
+    bool is_underflow() const {
+        return (pos() < 0);
     }
 
     template <typename T>
-    bool skipPtr(T * & pt) {
-        return skipValue(pt);
+    bool is_underflow(const T & val) const {
+        ZIPLAB_UNUSED(val);
+        return ((pos() - sizeof(val)) < 0);
+    }
+
+    using super_type::is_overflow;
+
+    using super_type::unsafeWrite;
+    using super_type::write;
+
+    // Unsafe write
+    void unsafeWrite(const BasicInputStream & out) {
+        this->unsafeWrite(out.data(), out.size());
+    }
+
+    // Safety write
+    bool write(const BasicInputStream & out) {
+        return this->write(out.data(), out.size());
     }
 
     // Unsafe skip value
@@ -315,6 +247,100 @@ public:
         T * pt;
         unsafeSkipValue(pt);
         ZIPLAB_UNUSED(pt);
+    }
+
+    // Safety skip value
+    template <typename T>
+    bool skipValue(T & val) {
+        static constexpr index_type step = sizeof(T);
+        assert(this->pos() >= 0);
+        if ((pos_ + step) <= this->ssize()) {
+            ZIPLAB_UNUSED(val);
+            pos_ += step;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool skipBool(bool & b) {
+        std::uint8_t byte = static_cast<std::uint8_t>(b);
+        bool success = skipValue(byte);
+        b = (byte != 0);
+        return success;
+    }
+
+    bool skipChar(char & ch) {
+        return skipValue(ch);
+    }
+
+    bool skipUChar(unsigned char & ch) {
+        return skipValue(ch);
+    }
+
+    bool skipWChar(wchar_t & wch) {
+        return skipValue(wch);
+    }
+
+    bool skipSByte(std::int8_t & sbyte) {
+        return skipValue(sbyte);
+    }
+
+    bool skipByte(std::uint8_t & byte) {
+        return skipValue(byte);
+    }
+
+    bool skipInt8(std::int8_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipUInt8(std::uint8_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipInt16(std::int16_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipUInt16(std::uint16_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipInt32(std::int32_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipUInt32(std::uint32_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipInt64(std::int64_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipUInt64(std::uint64_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipSizeT(std::size_t & val) {
+        return skipValue(val);
+    }
+
+    bool skipFloat(float & val) {
+        return skipValue(val);
+    }
+
+    bool skipDouble(double & val) {
+        return skipValue(val);
+    }
+
+    bool skipVoidPtr(void * & pt) {
+        return skipValue(pt);
+    }
+
+    template <typename T>
+    bool skipPtr(T * & pt) {
+        return skipValue(pt);
     }
 
     // Safety peek value

@@ -142,6 +142,54 @@ public:
         }
     }
 
+    // Bound checking
+    bool is_overflow() const {
+        return (size() > capacity());
+    }
+
+    template <typename T>
+    bool is_overflow(const T & val) const {
+        ZIPLAB_UNUSED(val);
+        return ((size() + sizeof(val)) > capacity());
+    }
+
+    // Cursor
+    this_type & backward(size_type step) {
+        size_ -= step;
+        return *this;
+    }
+
+    this_type & forward(size_type step) {
+        size_ += step;
+        return *this;
+    }
+
+    this_type & rewind(offset_type offset) {
+        size_ -= static_cast<size_type>(offset);
+        return *this;
+    }
+
+    this_type & skip(offset_type offset) {
+        size_ += static_cast<size_type>(offset);
+        return *this;
+    }
+
+    void seek_to_begin() {
+        size_ = 0;
+    }
+
+    void seek_to_end() {
+        // size_ = size();
+    }
+
+    void seek_to_tail() {
+        size_ = capacity();
+    }
+
+    void seek_to(index_type pos) {
+        size_ = static_cast<size_type>(pos);
+    }
+
     inline bool need_grow(size_type delta_size) const {
         size_type new_size = this->size() + delta_size;
         return (new_size > this->capacity());
@@ -207,6 +255,14 @@ public:
     void clear() {
         if (this->is_valid() && !this->is_empty()) {
             clear_data();
+            size_ = 0;
+        }
+    }
+
+    void clear_all() {
+        if (this->is_valid() && (this->capacity() > 0)) {
+            clear_all_data();
+            size_ = 0;
         }
     }
 
@@ -236,17 +292,6 @@ public:
     template <typename Container>
     void copy_from_container(const Container & src) {
         copy_from_container_impl(this->data(), this->size(), src);
-    }
-
-    // Cursor
-    this_type & backward(size_type step) {
-        size_ -= step;
-        return *this;
-    }
-
-    this_type & forward(size_type step) {
-        size_ += step;
-        return *this;
     }
 
     // Unsafe write value
@@ -456,6 +501,12 @@ private:
         assert(this->data() != nullptr);
         assert(this->size() > 0);
         std::memset((void *)this->data(), 0, this->size() * sizeof(char_type));
+    }
+
+    inline void clear_all_data() {
+        assert(this->data() != nullptr);
+        assert(this->capacity() > 0);
+        std::memset((void *)this->data(), 0, this->capacity() * sizeof(char_type));
     }
 
     inline void copy_data(const char_type * dest_data, size_type dest_size,

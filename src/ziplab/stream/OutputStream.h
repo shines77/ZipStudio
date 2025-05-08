@@ -98,6 +98,46 @@ public:
         lhs.swap(rhs);
     }
 
+    using super_type::is_overflow;
+
+    // Cursor
+    this_type & backward(size_type step) {
+        this->buffer_.backward(step);
+        return *this;
+    }
+
+    this_type & forward(size_type step) {
+        this->buffer_.forward(step);
+        return *this;
+    }
+
+    this_type & rewind(offset_type offset) {
+        this->buffer_.rewind(offset);
+        return *this;
+    }
+
+    this_type & skip(offset_type offset) {
+        this->buffer_.skip(offset);
+        return *this;
+    }
+
+    // Seek to
+    void seek_to_begin() {
+        this->buffer_.seek_to_begin();
+    }
+
+    void seek_to_end() {
+        this->buffer_.seek_to_end();
+    }
+
+    void seek_to_tail() {
+        this->buffer_.seek_to_tail();
+    }
+
+    void seek_to(index_type pos) {
+        this->buffer_.seek_to(pos);
+    }
+
     using super_type::unsafeWrite;
     using super_type::write;
 
