@@ -622,7 +622,7 @@ uint32_t bsf32(uint32_t n)
     return (uint32_t)__builtin_ctz(n);
   #elif defined(__GNUC__) || __has_builtin(__bsfd) || (__clang_major__ >= 12)
     // gcc: __bsfd(n)
-    return __bsfd(n);
+    return (uint32_t)__bsfd(n);
   #else
     return (uint32_t)__internal_ctz(n);
   #endif
@@ -636,7 +636,26 @@ uint32_t bsf64(uint64_t n)
 {
     assert(n != 0);
     ZIPLAB_ASSUME(n != 0);
+#if (jstd_cplusplus >= 2020L)
+    return (uint32_t)(31 - std::countr_zero(n));
+#elif (defined(_MSC_VER) && (_MSC_VER >= 1500)) && !defined(__clang__)
+    unsigned long index;
+    ::_BitScanForward64(&index, (unsigned long long)n);
+    return (uint32_t)index;
+#elif defined(__GNUC__) || (defined(__clang__) && !defined(_MSC_VER))
+  #if __has_builtin(__builtin_ctz)
+    return (uint32_t)__builtin_ctzll((unsigned long long)n);
+  #elif defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
+    return (uint32_t)__builtin_ctzll((unsigned long long)n);
+  #elif defined(__GNUC__) || __has_builtin(__bsfq) || (__clang_major__ >= 12)
+    // gcc: __bsfq(n)
+    return (uint32_t)__bsfq(n);
+  #else
     return (uint32_t)__internal_ctzll(n);
+  #endif
+#else
+    return (uint32_t)__internal_ctzll(n);
+#endif
 }
 
 static inline
@@ -667,7 +686,7 @@ uint32_t bsr32(uint32_t n)
     return (uint32_t)(31 - __builtin_clz(n));
   #elif defined(__GNUC__) || __has_builtin(__bsrd) || (__clang_major__ >= 12)
     // gcc: __bsrd(n)
-    return __bsrd(n);
+    return (uint32_t)__bsrd(n);
   #else
     return (uint32_t)(31 - __internal_clz(n));
   #endif
@@ -681,7 +700,26 @@ uint32_t bsr64(uint64_t n)
 {
     assert(n != 0);
     ZIPLAB_ASSUME(n != 0);
-    return (uint32_t)(63 - __internal_clzll(n));
+#if (jstd_cplusplus >= 2020L)
+    return (uint32_t)(31 - std::countl_zero(n));
+#elif (defined(_MSC_VER) && (_MSC_VER >= 1500)) && !defined(__clang__)
+    unsigned long index;
+    ::_BitScanReverse64(&index, (unsigned long long)n);
+    return (uint32_t)index;
+#elif defined(__GNUC__) || (defined(__clang__) && !defined(_MSC_VER))
+  #if __has_builtin(__builtin_clzll)
+    return (uint32_t)(31 - __builtin_clzll((unsigned long long)n));
+  #elif defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
+    return (uint32_t)(31 - __builtin_clzll((unsigned long long)n));
+  #elif defined(__GNUC__) || __has_builtin(__bsrq) || (__clang_major__ >= 12)
+    // gcc: __bsrq(n)
+    return (uint32_t)__bsrq(n);
+  #else
+    return (uint32_t)(31 - __internal_clzll(n));
+  #endif
+#else
+    return (uint32_t)(31 - __internal_clzll(n));
+#endif
 }
 
 static inline

@@ -29,8 +29,9 @@ public:
     using ssize_type = std::ptrdiff_t;
 
     // The number of bits per word
-    static constexpr size_type kBitsPerWord = sizeof(value_type) * CHAR_BIT;
-    static constexpr size_type kBitsPerByte = CHAR_BIT;
+    static constexpr size_type kBytesPerWord = sizeof(value_type);
+    static constexpr size_type kBitsPerWord  = kBytesPerWord * CHAR_BIT;
+    static constexpr size_type kBitsPerByte  = CHAR_BIT;
 
     // The total size of packing bits into words
     static constexpr size_type kOrigTotalWords = (Bits + (kBitsPerWord - 1)) / kBitsPerWord;
@@ -357,6 +358,12 @@ public:
         return set(pos, false);
     }
 
+    bitset & reset_part(size_type count) noexcept {
+        // Set part of bits to false
+        fill_part(count);
+        return *this;
+    }
+
     bitset operator ~ () const noexcept {
         // Flip all bits
         return (bitset(*this).flip());
@@ -445,11 +452,23 @@ private:
     }
 
     void fill_all(value_type value = 0) {
-        // Set all words to _Wordval
+        // Set all words to value
         for (ssize_type pos = 0; pos < ksTotalWords; pos++) {
             array_[pos] = value;
         }
         if (value != 0) {
+            trim();
+        }
+    }
+
+    void fill_part(size_type count, value_type value = 0) {
+        // Set all words to value
+        ssize_type end = (count + (kBytesPerWord - 1)) / kBytesPerWord;
+        ssize_type pos;
+        for (pos = 0; pos < end; pos++) {
+            array_[pos] = value;
+        }
+        if (value != 0 && pos == ksTotalWords) {
             trim();
         }
     }

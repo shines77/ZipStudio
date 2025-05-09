@@ -209,14 +209,14 @@ public:
                 }
 
                 // Output flag bits and block data
-                static constexpr size_type flag_capacity = (kBlockDataSize + (CHAR_BIT - 1)) / CHAR_BIT;
+                size_type flag_bytes = (block_capacity + (CHAR_BIT - 1)) / CHAR_BIT;
                 // Allocate the size of data to be added in advance
-                compressed_os.grow(flag_capacity + block_capacity);
+                compressed_os.grow(flag_bytes + block_capacity);
 
-                unsafe_output_flag_bits(compressed_os, flag_bits, block_capacity);
+                compressed_os.unsafeWrite(flag_bits.data(), flag_bytes);
                 compressed_os.unsafeWrite(block_data);
 
-                flag_bits.reset();
+                flag_bits.reset_part(flag_bytes);
                 block_data.clear();
 
                 pos = block_end;
@@ -251,11 +251,11 @@ private:
                                              const jstd::bitset<kBlockFlagSize> & flag_bits,
                                              size_type flag_capacity) {
         assert(flag_capacity <= kBlockFlagSize);
-        size_type num_bytes = (flag_capacity + (CHAR_BIT - 1)) / CHAR_BIT;
-        assert((compressedOs.size() + num_bytes) < compressedOs.capacity());
+        assert((compressedOs.size() + flag_capacity) < compressedOs.capacity());
+        size_type num_bytes = flag_capacity;
 
-        //assert(num_bytes == flag_bits.bytes());
-        compressedOs.write(flag_bits.data(), num_bytes);
+        assert(num_bytes <= flag_bits.bytes());
+        compressedOs.unsafeWrite(flag_bits.data(), num_bytes);
 
         return num_bytes;
     }
@@ -264,12 +264,12 @@ private:
                                            const jstd::bitset<kBlockFlagSize> & flag_bits,
                                            size_type flag_capacity) {
         assert(flag_capacity <= kBlockFlagSize);
-        size_type num_bytes = (flag_capacity + (CHAR_BIT - 1)) / CHAR_BIT;
+        size_type num_bytes = flag_capacity;
 
         // Allocate the size of data to be added in advance
         compressedOs.reserve(compressedOs.size() + num_bytes);
 
-        //assert(num_bytes == flag_bits.bytes());
+        assert(num_bytes <= flag_bits.bytes());
         compressedOs.write(flag_bits.data(), num_bytes);
 
         return num_bytes;
