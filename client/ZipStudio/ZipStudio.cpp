@@ -23,6 +23,8 @@
 #include <ziplab/huffman/huffman.hpp>
 
 #include <ziplab/lz77/lzss.hpp>
+#include <ziplab/rans/rANSEncoder.h>
+#include <ziplab/rans/rANSDecoder.h>
 
 #include "dmc_test.h"
 
@@ -193,6 +195,32 @@ void ziplab_lzss_test()
     }
 }
 
+void ziplab_rans_test()
+{
+    std::string input_data1 = "This is a simple example of rANS compression algorithm.";
+    std::string input_data2 = "ABABABAABABABACCDABABABABA";
+
+    std::string & input_data = input_data2;
+
+    ziplab::rANSEncoder64<char> rANSEnocoder;
+
+    int ret_val;
+    ziplab::MemoryBuffer compressed_data;
+    ret_val = rANSEnocoder.compress(input_data, compressed_data);
+
+    ziplab::MemoryBuffer decompressed_data;
+    if (ret_val == 0) {
+        ziplab::rANSDecoder64<char> rANSDecoder;
+        ret_val = rANSDecoder.decompress(compressed_data, decompressed_data);
+    }
+
+    if ((ret_val == 0) && compare_buffer(decompressed_data, input_data)) {
+        printf("ziplab::rANSDecoder64::decompress() is PASSED.\n\n");
+    } else {
+        printf("ziplab::rANSDecoder64::decompress() is FAILED.\n\n");
+    }
+}
+
 // Example usage
 int dynamic_markov_compression_test()
 {
@@ -235,17 +263,18 @@ int main(int argc, char * argv[])
 
     printf("Welcome to ZipStudio Client v1.0 .\n\n");
 
-    //zipstd_huffman_test();
-    //ziplab_huffman_test();
-
-    ziplab_lzss_test();
-
     ziplab_MemoryBuffer_test();
     ziplab_MemoryView_test();
 
     ziplab_InputStream_test();
 
-    dynamic_markov_compression_test();
+    //dynamic_markov_compression_test();
+
+    //zipstd_huffman_test();
+    //ziplab_huffman_test();
+
+    ziplab_lzss_test();
+    ziplab_rans_test();
 
 #if defined(_MSC_VER)
     //::system("pause");

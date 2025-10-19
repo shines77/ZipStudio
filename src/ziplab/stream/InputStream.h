@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <type_traits>  // For std::forward<T>()
 #include <fstream>
 #include <sstream>
 
@@ -132,7 +133,7 @@ public:
     void unsafeSkipValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        assert((pos() + step) <= this->ssize());
+        assert((this->pos() + step) <= this->ssize());
         ZIPLAB_UNUSED(val);
         pos_ += step;
     }
@@ -257,7 +258,7 @@ public:
     bool skipValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        if ((pos() + step) <= this->ssize()) {
+        if ((this->pos() + step) <= this->ssize()) {
             ZIPLAB_UNUSED(val);
             pos_ += step;
             return true;
@@ -351,7 +352,7 @@ public:
     bool peekValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        if ((pos() + step) <= this->ssize()) {
+        if ((this->pos() + step) <= this->ssize()) {
             val = *(reinterpret_cast<T *>(this->buffer_.data() + pos()));
             return true;
         } else {
@@ -445,7 +446,7 @@ public:
     void unsafePeekValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        assert((pos() + step) <= this->ssize());
+        assert((this->pos() + step) <= this->ssize());
         val = *(reinterpret_cast<T *>(this->buffer_.data() + pos()));
     }
 
@@ -569,7 +570,7 @@ public:
     bool readValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        if ((pos() + step) <= this->ssize()) {
+        if ((this->pos() + step) <= this->ssize()) {
             val = *(reinterpret_cast<T *>(this->buffer_.data() + pos()));
             pos_ += step;
             return true;
@@ -664,7 +665,7 @@ public:
     void unsafeReadValue(T & val) {
         static constexpr index_type step = sizeof(T);
         assert(this->pos() >= 0);
-        assert((pos_ + step) <= this->ssize());
+        assert((this->pos() + step) <= this->ssize());
         val = *(reinterpret_cast<T *>(this->buffer_.data() + pos_));
         pos_ += step;
     }

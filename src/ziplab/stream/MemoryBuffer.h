@@ -164,13 +164,18 @@ public:
         return *this;
     }
 
-    this_type & rewind(offset_type offset) {
-        size_ -= static_cast<size_type>(offset);
+    this_type & rewind(size_type count) {
+        size_ -= count;
         return *this;
     }
 
-    this_type & skip(offset_type offset) {
-        size_ += static_cast<size_type>(offset);
+    this_type & skip(size_type count) {
+        size_ += count;
+        return *this;
+    }
+
+    this_type & offset(offset_type off) {
+        size_ += static_cast<size_type>(off);
         return *this;
     }
 
@@ -549,6 +554,7 @@ private:
             size_type new_size = src_size;
             const char_type * new_data = allocate(new_size);
             this->data_ = new_data;
+            this->size_ = src_size;
             this->capacity_ = new_size;
 
             if (src_size > 0) {
@@ -557,6 +563,7 @@ private:
         } else if (!IsInitialize) {
             // Reset the status when it's not initializing.
             this->data_ = nullptr;
+            this->size_ = 0;
             this->capacity_ = 0;
         }
     }
@@ -573,6 +580,7 @@ private:
         size_type new_size = src.size();
         const char_type * new_data = allocate(new_size);
         this->data_ = new_data;
+        this->size_ = src.size();
         this->capacity_ = new_size;
 
         // If the source vector is not empty, then copy the data.

@@ -61,7 +61,6 @@ public:
     }
 
     ~BasicIOStreamRoot() {
-        destroy();
     }
 
     // Property

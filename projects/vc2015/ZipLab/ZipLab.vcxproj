@@ -44,6 +44,9 @@
     <ClInclude Include="..\..\..\src\ziplab\lz77\lz77.hpp" />
     <ClInclude Include="..\..\..\src\ziplab\lz77\lzDictHashmap.hpp" />
     <ClInclude Include="..\..\..\src\ziplab\lz77\lzss.hpp" />
+    <ClInclude Include="..\..\..\src\ziplab\rans\rANS.h" />
+    <ClInclude Include="..\..\..\src\ziplab\rans\rANSDecoder.h" />
+    <ClInclude Include="..\..\..\src\ziplab\rans\rANSEncoder.h" />
     <ClInclude Include="..\..\..\src\ziplab\stream\FileReader.h" />
     <ClInclude Include="..\..\..\src\ziplab\stream\FileWriter.h" />
     <ClInclude Include="..\..\..\src\ziplab\stream\InputStream.h" />
@@ -52,6 +55,10 @@
     <ClInclude Include="..\..\..\src\ziplab\stream\MemoryStorage.h" />
     <ClInclude Include="..\..\..\src\ziplab\stream\MemoryView.h" />
     <ClInclude Include="..\..\..\src\ziplab\stream\OutputStream.h" />
+    <ClInclude Include="..\..\..\src\ziplab\stream\ReverseInputStream.h" />
+    <ClInclude Include="..\..\..\src\ziplab\stream\ReverseOutputStream.h" />
+    <ClInclude Include="..\..\..\src\ziplab\stream\SequentialInputStream.h" />
+    <ClInclude Include="..\..\..\src\ziplab\stream\SequentialOutputStream.h" />
     <ClInclude Include="..\..\..\src\ziplab\stream\StreamBuffer.h" />
     <ClInclude Include="..\..\..\src\ziplab\version.h" />
   </ItemGroup>

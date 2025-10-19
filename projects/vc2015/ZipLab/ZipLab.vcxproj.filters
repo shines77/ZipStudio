@@ -26,6 +26,9 @@
     <Filter Include="src\jstd\bits">
       <UniqueIdentifier>{1e4f18a7-ff3f-4554-9a32-048e7a755443}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\rans">
+      <UniqueIdentifier>{303a8414-417c-464b-8e3f-c461f9faa365}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\ziplab\huffman\huffman.cpp">
@@ -128,6 +131,27 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\ziplab\jstd\bits\Power2.hpp">
       <Filter>src\jstd\bits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\ReverseInputStream.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\ReverseOutputStream.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\SequentialInputStream.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\stream\SequentialOutputStream.h">
+      <Filter>src\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\rans\rANS.h">
+      <Filter>src\rans</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\rans\rANSDecoder.h">
+      <Filter>src\rans</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ziplab\rans\rANSEncoder.h">
+      <Filter>src\rans</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
