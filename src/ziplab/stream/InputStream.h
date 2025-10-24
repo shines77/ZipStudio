@@ -113,7 +113,15 @@ public:
         return ((pos() - sizeof(val)) < 0);
     }
 
-    using super_type::is_overflow;
+    bool is_overflow() const {
+        return (pos() >= this->ssize());
+    }
+
+    template <typename T>
+    bool is_overflow(const T & val) const {
+        ZIPLAB_UNUSED(val);
+        return ((pos() + sizeof(val)) >= this->ssize());
+    }
 
     using super_type::unsafeWrite;
     using super_type::write;

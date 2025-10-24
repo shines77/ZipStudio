@@ -251,84 +251,82 @@ public:
         this->buffer_.writeValue(std::forward<T>(val));
     }
 
-    bool writeBool(bool b) {
+    void writeBool(bool b) {
         std::uint8_t byte = static_cast<std::uint8_t>(b);
-        bool success = writeValue(byte);
-        b = (byte != 0);
-        return success;
+        writeValue(byte);
     }
 
-    bool writeChar(char ch) {
-        return writeValue(ch);
+    void writeChar(char ch) {
+        writeValue(ch);
     }
 
-    bool writeUChar(unsigned char ch) {
-        return writeValue(ch);
+    void writeUChar(unsigned char ch) {
+        writeValue(ch);
     }
 
-    bool writeWChar(wchar_t wch) {
-        return writeValue(wch);
+    void writeWChar(wchar_t wch) {
+        writeValue(wch);
     }
 
-    bool writeSByte(std::int8_t sbyte) {
-        return writeValue(sbyte);
+    void writeSByte(std::int8_t sbyte) {
+        writeValue(sbyte);
     }
 
-    bool writeByte(std::uint8_t byte) {
-        return writeValue(byte);
+    void writeByte(std::uint8_t byte) {
+        writeValue(byte);
     }
 
-    bool writeInt8(std::int8_t val) {
-        return writeValue(val);
+    void writeInt8(std::int8_t val) {
+        writeValue(val);
     }
 
-    bool writeUInt8(std::uint8_t val) {
-        return writeValue(val);
+    void writeUInt8(std::uint8_t val) {
+        writeValue(val);
     }
 
-    bool writeInt16(std::int16_t val) {
-        return writeValue(val);
+    void writeInt16(std::int16_t val) {
+        writeValue(val);
     }
 
-    bool writeUInt16(std::uint16_t val) {
-        return writeValue(val);
+    void writeUInt16(std::uint16_t val) {
+        writeValue(val);
     }
 
-    bool writeInt32(std::int32_t val) {
-        return writeValue(val);
+    void writeInt32(std::int32_t val) {
+        writeValue(val);
     }
 
-    bool writeUInt32(std::uint32_t val) {
-        return writeValue(val);
+    void writeUInt32(std::uint32_t val) {
+        writeValue(val);
     }
 
-    bool writeInt64(std::int64_t val) {
-        return writeValue(val);
+    void writeInt64(std::int64_t val) {
+        writeValue(val);
     }
 
-    bool writeUInt64(std::uint64_t val) {
-        return writeValue(val);
+    void writeUInt64(std::uint64_t val) {
+        writeValue(val);
     }
 
-    bool writeSizeT(std::size_t val) {
-        return writeValue(val);
+    void writeSizeT(std::size_t val) {
+        writeValue(val);
     }
 
-    bool writeFloat(float val) {
-        return writeValue(val);
+    void writeFloat(float val) {
+        writeValue(val);
     }
 
-    bool writeDouble(double val) {
-        return writeValue(val);
+    void writeDouble(double val) {
+        writeValue(val);
     }
 
-    bool writeVoidPtr(void * pt) {
-        return writeValue(pt);
+    void writeVoidPtr(void * pt) {
+        writeValue(pt);
     }
 
     template <typename T>
-    bool writePtr(T * pt) {
-        return writeValue(pt);
+    void writePtr(T * pt) {
+        writeValue(pt);
     }
 
 protected:

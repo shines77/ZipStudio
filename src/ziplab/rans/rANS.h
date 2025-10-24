@@ -47,7 +47,7 @@ struct SymbolStats {
         total_freq(0),
         min_symbol(static_cast<std::uint8_t>(symbolTotal - 1)),
         max_symbol(0) {
-        symbols.resize(symbolTotal);
+        symbols.resize(symbolTotal + 1);
     }
 
     ~SymbolStats() {
