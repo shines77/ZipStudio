@@ -20,6 +20,8 @@
 #include "ziplab/stream/InputStream.h"
 #include "ziplab/stream/OutputStream.h"
 
+#include <windows.h>
+
 namespace ziplab {
 
 template <typename CharT>
@@ -31,8 +33,10 @@ public:
     using offset_type = std::uint16_t;
 
     static const size_type kTotalFreq = 65536;
-    static const size_type kInitState = 0x7FFFFFFFu;
-    static const size_type kMaxState  = 0xFFFFFFFFFFFFFFFFull;
+    //static const size_type kInitState = 0x7FFFFFFFu;
+    static const size_type kInitState = 0x80000000u;
+    //static const size_type kMaxState  = 0xFFFFFFFFFFFFFFFFull;
+    static const size_type kMaxState  = 0x8000000000000000ull;
 
     using Symbol = std::uint8_t;
 
@@ -180,7 +184,7 @@ public:
         std::uint32_t cumul = stats.symbols[symbol].cumul;
 
         // Normalize
-        while (state > (kMaxState / kTotalFreq) * freq) {
+        while (state >= (kMaxState / (kTotalFreq + 1)) * freq) {
             std::uint32_t low32 = static_cast<std::uint32_t>(state & 0x00000000FFFFFFFFull);
             output_os.writeUInt32(low32);
             state >>= 32;
@@ -229,6 +233,8 @@ public:
             std::uint64_t state = kInitState;
             for (auto iter = input_data.rbegin(); iter != input_data.rend(); ++iter) {
                 Symbol symbol = static_cast<Symbol>(*iter);
+                std::string str(1, symbol);
+                ::OutputDebugString(str.c_str());
                 state = encode(stats, state, symbol, output_os);
             }
 

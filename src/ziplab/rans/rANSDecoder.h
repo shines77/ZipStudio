@@ -31,8 +31,10 @@ public:
     using offset_type = std::uint16_t;
 
     static const size_type kTotalFreq = 65536;
-    static const size_type kInitState = 0x7FFFFFFFu;
-    static const size_type kMaxState  = 0xFFFFFFFFFFFFFFFFull;
+    //static const size_type kInitState = 0x7FFFFFFFu;
+    static const size_type kInitState = 0x80000000u;
+    //static const size_type kMaxState  = 0xFFFFFFFFFFFFFFFFull;
+    static const size_type kMaxState  = 0x8000000000000000ull;
 
     using Symbol = std::uint8_t;
 
@@ -81,13 +83,14 @@ private:
 
 public:
     std::uint64_t decode(const SymbolStats & stats, std::uint64_t state, std::size_t & symbol,
-                         std::vector<std::uint32_t>::reverse_iterator iter, OutputStream & output_os) {
+                         std::vector<std::uint32_t> states, ssize_type & pos,
+                         OutputStream & output_os) {
         std::uint32_t slot = state % kTotalFreq;
 
         symbol = 0;
         while (slot >= stats.symbols[symbol + 1].cumul) {
             ++symbol;
-            if (symbol > kMaxSymbol) {
+            if (symbol >= kSymbolTotal) {
                 return 0;
             }
         }
@@ -95,14 +98,17 @@ public:
         std::uint32_t freq = stats.symbols[symbol].freq;
         std::uint32_t cumul = stats.symbols[symbol].cumul;
 
-        std::uint64_t remainder = slot - cumul;
-        std::uint64_t nextState = state * freq / kTotalFreq + remainder;
+        std::uint64_t remainder = static_cast<std::uint64_t>(slot - cumul);
+        std::uint64_t nextState = state / kTotalFreq * freq + remainder;
 
         // Normalize
-        while (state < kInitState) {
-            std::uint32_t low32 = static_cast<std::uint32_t>(state & 0x00000000FFFFFFFFull);
-            state = (state << 32) | (*iter & 0xFFFFFFFFul);
-            ++iter;
+        while (nextState <= kInitState) {
+            if (pos >= 0) {
+                nextState = (nextState << 32) | (states[pos] & 0xFFFFFFFFul);
+                --pos;
+            } else {
+                break;
+            }
         }
 
         return nextState;
@@ -140,11 +146,16 @@ public:
                 data_states.pop_back();
             }
 
-            for (auto iter = data_states.rbegin(); iter != data_states.rend();) {
+            ssize_type pos = data_states.size() - 1;
+            while (content_size > 0) {                
                 std::size_t symbol;
-                state = decode(stats, state, symbol, iter, output_os);
-                if (state != 0) {
+                state = decode(stats, state, symbol, data_states, pos, output_os);
+                if (symbol < kSymbolTotal) {
                     output_os.writeUInt8(static_cast<Symbol>(symbol));
+                    assert(content_size > 0);
+                    content_size--;
+                } else {
+                    break;
                 }
             }
         }
